@@ -48,6 +48,8 @@ WebCodeCli 采用 **Web 界面配置** 模式，所有配置都可以在首次�
 ```bash
 # 检查 Docker
 docker --version
+
+# 检查 Docker Compose
 docker-compose --version
 ```
 
@@ -75,7 +77,7 @@ docker-compose ps
 APP_PORT=8080 docker-compose up -d
 ```
 
-### 方式二：Docker Run
+### 方式二：Docker Run（高级配置）
 
 ```bash
 # 构建镜像
@@ -85,12 +87,42 @@ docker build -t webcodecli:latest .
 docker run -d \
   --name webcodecli \
   --restart unless-stopped \
-  -p 5000:5000 \
+  --network=host \
   -v webcodecli-data:/app/data \
   -v webcodecli-workspaces:/app/workspaces \
   -v webcodecli-logs:/app/logs \
   webcodecli:latest
 ```
+
+### 方式三：Docker Run（完整挂载，包含技能文件）
+
+```bash
+# 启动容器（挂载 appsettings.json 和技能文件）
+docker run -d \
+  --name webcodecli \
+  --restart unless-stopped \
+  --network=host \
+  --env-file .env \
+  -v /data/webcode/WebCode/appsettings.json:/app/appsettings.json \
+  -v /data/webcode/workspace:/webcode/workspace \
+  -v /data/webcode/WebCode/skills/codex:/root/.codex/skills \
+  -v /data/webcode/WebCode/skills/claude:/root/.claude/skills \
+  -v webcodecli-data:/app/data \
+  -v webcodecli-workspaces:/app/workspaces \
+  -v webcodecli-logs:/app/logs \
+  webcodecli:latest
+```
+
+### 挂载说明
+
+| 宿主机路径 | 容器路径 | 说明 | 必需 |
+|------------|----------|------|------|
+| `webcodecli-data` | `/app/data` | 数据库和配置 | ✅ |
+| `webcodecli-workspaces` | `/app/workspaces` | 工作区文件 | ✅ |
+| `webcodecli-logs` | `/app/logs` | 应用日志 | ✅ |
+| `/path/to/appsettings.json` | `/app/appsettings.json` | 配置文件（高级） | ❌ |
+| `/path/to/skills/codex` | `/root/.codex/skills` | Codex 技能（高级） | ❌ |
+| `/path/to/skills/claude` | `/root/.claude/skills` | Claude 技能（高级） | ❌ |
 
 ---
 
@@ -132,9 +164,101 @@ Docker Compose 自动创建以下数据卷：
 
 ---
 
-## 五、日常维护
+## 五、高级配置（技能文件挂载）
 
-### 5.1 查看日志
+### 5.1 准备技能文件
+
+技能文件是 Claude 和 Codex CLI 的扩展功能，包含各种预定义的工作流和任务模板。
+
+#### 5.1.1 创建技能目录
+```bash
+mkdir -p /data/webcode/WebCode/skills/codex
+mkdir -p /data/webcode/WebCode/skills/claude
+```
+
+#### 5.1.2 复制技能文件
+```bash
+# 从现有服务复制技能文件
+cp -r /data/www/.codex/skills/* /data/webcode/WebCode/skills/codex/
+cp -r /data/www/.claude/skills/* /data/webcode/WebCode/skills/claude/
+```
+
+#### 5.1.3 技能列表
+
+**Codex 技能** (20个):
+```
+algorithmic-art           # 算法艺术生成
+brand-guidelines         # 品牌指南处理
+canvas-design           # Canvas 设计工具
+distributed-task-orchestrator  # 分布式任务编排
+doc-coauthoring         # 文档协作
+docx                    # DOCX 文件处理
+frontend-design         # 前端设计
+internal-comms          # 内部通信
+mcp-builder             # MCP 构建器
+ms-agent-framework-rag  # MS Agent Framework RAG
+office-to-md            # Office 转 Markdown
+pdf                     # PDF 处理
+planning-with-files     # 文件规划
+pptx                    # PPTX 处理
+skill-creator           # 技能创建器
+slack-gif-creator       # Slack GIF 创建器
+theme-factory           # 主题工厂
+web-artifacts-builder   # Web 构建器
+webapp-testing          # Web 应用测试
+xlsx                    # Excel 处理
+```
+
+**Claude 技能** (18个):
+```
+algorithmic-art         # 算法艺术生成
+brand-guidelines       # 品牌指南处理
+canvas-design         # Canvas 设计工具
+doc-coauthoring       # 文档协作
+docx                  # DOCX 文件处理
+frontend-design       # 前端设计
+internal-comms        # 内部通信
+mcp-builder           # MCP 构建器
+office-to-md          # Office 转 Markdown
+pdf                   # PDF 处理
+planning-with-files   # 文件规划
+pptx                  # PPTX 处理
+skill-creator         # 技能创建器
+slack-gif-creator     # Slack GIF 创建器
+theme-factory         # 主题工厂
+web-artifacts-builder # Web 构建器
+webapp-testing        # Web 应用测试
+xlsx                  # Excel 处理
+```
+
+### 5.2 管理技能文件
+
+#### 添加新技能
+```bash
+# 1. 将新技能复制到相应目录
+cp -r /path/to/new-skill /data/webcode/WebCode/skills/codex/
+
+# 2. 重启容器
+docker restart webcodecli
+
+# 3. 验证技能已加载
+docker exec webcodecli ls /root/.codex/skills/ | grep new-skill
+```
+
+#### 验证技能挂载
+```bash
+# 检查 Codex 技能数量
+docker exec webcodecli ls /root/.codex/skills/ | wc -l
+
+# 检查 Claude 技能数量
+docker exec webcodecli ls /root/.claude/skills/ | wc -l
+```
+
+---
+
+## 六、日常维护
+
+### 6.1 查看日志
 ```bash
 # Docker Compose
 docker-compose logs -f
@@ -143,7 +267,7 @@ docker-compose logs -f
 docker logs -f webcodecli
 ```
 
-### 5.2 重启服务
+### 6.2 重启服务
 ```bash
 # Docker Compose
 docker-compose restart
@@ -152,7 +276,7 @@ docker-compose restart
 docker restart webcodecli
 ```
 
-### 5.3 更新版本
+### 6.3 更新版本
 ```bash
 # 拉取最新代码
 git pull
@@ -161,7 +285,7 @@ git pull
 docker-compose up -d --build
 ```
 
-### 5.4 停止服务
+### 6.4 停止服务
 ```bash
 # Docker Compose
 docker-compose down
@@ -172,11 +296,11 @@ docker stop webcodecli
 
 ---
 
-## 六、高级配置（可选）
+## 七、高级配置（环境变量）
 
 如果您需要在启动时预置配置，可以使用环境变量：
 
-### 6.1 通过 .env 文件
+### 7.1 通过 .env 文件
 
 ```bash
 # 创建 .env 文件
@@ -184,26 +308,36 @@ cat > .env << EOF
 APP_PORT=5000
 
 # Claude Code（可选，也可在页面配置）
-ANTHROPIC_BASE_URL=https://api.anthropic.com/
+ANTHROPIC_BASE_URL=https://api.antsk.cn/
 ANTHROPIC_AUTH_TOKEN=your_token
-ANTHROPIC_MODEL=claude-3-5-sonnet-20241022
+ANTHROPIC_MODEL=glm-4.7
+ANTHROPIC_SMALL_FAST_MODEL=glm-4.7
 
 # Codex（可选，也可在页面配置）
 NEW_API_KEY=your_api_key
-CODEX_BASE_URL=https://api.openai.com/v1
-CODEX_MODEL=gpt-4
+CODEX_MODEL=glm-4.7
+CODEX_MODEL_REASONING_EFFORT=medium
+CODEX_PROFILE=ipsa
+CODEX_BASE_URL=https://api.antsk.cn/v1
+CODEX_PROVIDER_NAME=azure codex-mini
+CODEX_APPROVAL_POLICY=never
+CODEX_SANDBOX_MODE=danger-full-access
+
+# 数据库配置（可选）
+DB_TYPE=Sqlite
+DB_CONNECTION=Data Source=/app/data/webcodecli.db
 EOF
 
 # 启动
 docker-compose up -d
 ```
 
-### 6.2 通过命令行
+### 7.2 通过命令行
 
 ```bash
 docker run -d \
   --name webcodecli \
-  -p 5000:5000 \
+  --network=host \
   -e ANTHROPIC_AUTH_TOKEN=your_token \
   -e NEW_API_KEY=your_api_key \
   -v webcodecli-data:/app/data \
@@ -211,24 +345,11 @@ docker run -d \
   webcodecli:latest
 ```
 
-### 6.3 使用 Host 网络模式
-
-如果需要容器直接使用主机网络：
-
-```bash
-docker run -d \
-  --name webcodecli \
-  --network=host \
-  -v webcodecli-data:/app/data \
-  -v webcodecli-workspaces:/app/workspaces \
-  webcodecli:latest
-```
-
 ---
 
-## 七、故障排查
+## 八、故障排查
 
-### 7.1 容器无法启动
+### 8.1 容器无法启动
 ```bash
 # 查看详细日志
 docker-compose logs
@@ -237,7 +358,7 @@ docker-compose logs
 docker-compose ps -a
 ```
 
-### 7.2 端口被占用
+### 8.2 端口被占用
 ```bash
 # 检查端口
 netstat -tlnp | grep 5000
@@ -246,7 +367,7 @@ netstat -tlnp | grep 5000
 APP_PORT=8080 docker-compose up -d
 ```
 
-### 7.3 重置系统配置
+### 8.3 重置系统配置
 ```bash
 # 停止容器
 docker-compose down
@@ -258,9 +379,23 @@ docker volume rm webcodecli-data
 docker-compose up -d
 ```
 
+### 8.4 技能未加载
+```bash
+# 检查技能目录
+ls -la /data/webcode/WebCode/skills/codex/
+ls -la /data/webcode/WebCode/skills/claude/
+
+# 检查容器内技能
+docker exec webcodecli ls /root/.codex/skills/
+docker exec webcodecli ls /root/.claude/skills/
+
+# 确认挂载点
+docker inspect webcodecli | grep -A 10 Mounts
+```
+
 ---
 
-## 八、备份与恢复
+## 九、备份与恢复
 
 ### 备份
 ```bash
@@ -269,6 +404,9 @@ docker run --rm \
   -v webcodecli-data:/data \
   -v $(pwd)/backup:/backup \
   alpine tar czf /backup/webcodecli-backup-$(date +%Y%m%d).tar.gz /data
+
+# 备份技能文件（如果使用外部挂载）
+tar czf /backup/webcodecli-skills-$(date +%Y%m%d).tar.gz -C /data/webcode/WebCode skills/
 ```
 
 ### 恢复
@@ -278,11 +416,54 @@ docker run --rm \
   -v webcodecli-data:/data \
   -v $(pwd)/backup:/backup \
   alpine tar xzf /backup/webcodecli-backup-20260114.tar.gz -C /
+
+# 恢复技能文件（如果使用外部挂载）
+tar xzf /backup/webcodecli-skills-20260114.tar.gz -C /data/webcode/WebCode
+
+# 重启容器
+docker-compose restart
 ```
 
 ---
 
-## 九、架构说明
+## 十、推送镜像到阿里云
+
+### 10.1 登录阿里云容器镜像服务
+```bash
+docker login --username=your_alias registry.cn-hangzhou.aliyuncs.com
+```
+
+### 10.2 打标签并推送
+```bash
+# 获取镜像 ID
+docker images | grep webcodecli
+
+# 打标签
+docker tag [ImageId] registry.cn-hangzhou.aliyuncs.com/tree456/webcode:[镜像版本号]
+
+# 示例
+docker tag d3747c95c2c2 registry.cn-hangzhou.aliyuncs.com/tree456/webcode:1.0.0
+
+# 推送镜像
+docker push registry.cn-hangzhou.aliyuncs.com/tree456/webcode:1.0.0
+```
+
+### 10.3 使用阿里云镜像部署
+```bash
+# 拉取镜像
+docker pull registry.cn-hangzhou.aliyuncs.com/tree456/webcode:1.0.0
+
+# 运行容器
+docker run -d \
+  --name webcodecli \
+  --restart unless-stopped \
+  --network=host \
+  registry.cn-hangzhou.aliyuncs.com/tree456/webcode:1.0.0
+```
+
+---
+
+## 架构说明
 
 ### Docker 镜像构建过程
 
@@ -293,9 +474,12 @@ docker run --rm \
    - 编译 .NET 应用
 
 2. **运行时镜像** (mcr.microsoft.com/dotnet/aspnet:10.0)
+   - 安装基础依赖: curl, wget, git, python3 等
    - 安装 Node.js 20.x
-   - 安装 Claude Code CLI
-   - 安装 Codex CLI
+   - 安装 Rust (Codex 需要)
+   - 安装 Claude Code CLI: `@anthropic-ai/claude-code`
+   - 安装 Codex CLI: `@openai/codex`
+   - 配置 Codex
    - 复制应用文件
 
 ### 端口说明
@@ -322,8 +506,123 @@ A: 默认使用 SQLite，无需额外配置。也支持 MySQL、PostgreSQL 等�
 ### Q: 如何查看系统是否正常运行？
 A: 访问 `http://localhost:5000/health` 检查健康状态。
 
+### Q: 如何使用 Host 网络模式？
+A: 使用 `--network=host` 参数启动容器，适合生产环境。
+
 ---
 
-**文档版本**: 2.0
+## 快速部署脚本
+
+### 一键部署脚本
+保存为 `deploy-docker.sh`:
+
+```bash
+#!/bin/bash
+set -e
+
+echo "=========================================="
+echo "WebCodeCli Docker 部署脚本"
+echo "=========================================="
+
+# 停止旧服务
+echo "停止旧服务..."
+systemctl stop webcode.service 2>/dev/null || true
+systemctl disable webcode.service 2>/dev/null || true
+docker rm -f webcodecli 2>/dev/null || true
+
+# 创建目录
+echo "创建目录..."
+mkdir -p /data/webcode/workspace
+mkdir -p /data/webcode/WebCode/skills/codex
+mkdir -p /data/webcode/WebCode/skills/claude
+
+# 拉取代码
+echo "拉取代码..."
+cd /data/webcode
+if [ -d "WebCode" ]; then
+    cd WebCode
+    git pull origin main
+else
+    git clone https://github.com/xuzeyu91/WebCode.git
+    cd WebCode
+fi
+
+# 复制技能文件（如果存在）
+if [ -d "/data/www/.codex/skills" ]; then
+    echo "复制 Codex 技能文件..."
+    cp -r /data/www/.codex/skills/* /data/webcode/WebCode/skills/codex/
+fi
+
+if [ -d "/data/www/.claude/skills" ]; then
+    echo "复制 Claude 技能文件..."
+    cp -r /data/www/.claude/skills/* /data/webcode/WebCode/skills/claude/
+fi
+
+# 构建镜像
+echo "构建镜像..."
+docker build --network=host -t webcodecli:latest .
+
+# 启动容器
+echo "启动容器..."
+docker run -d \
+  --name webcodecli \
+  --restart unless-stopped \
+  --network=host \
+  -v webcodecli-data:/app/data \
+  -v webcodecli-workspaces:/app/workspaces \
+  -v webcodecli-logs:/app/logs \
+  webcodecli:latest
+
+echo "=========================================="
+echo "部署完成！"
+echo "=========================================="
+docker ps | grep webcodecli
+
+echo ""
+echo "访问 http://localhost:5000 开始配置"
+```
+
+### 使用脚本
+```bash
+chmod +x deploy-docker.sh
+./deploy-docker.sh
+```
+
+---
+
+## 常用命令速查
+
+```bash
+# 查看容器状态
+docker ps | grep webcodecli
+
+# 查看容器日志
+docker logs -f webcodecli
+
+# 进入容器
+docker exec -it webcodecli bash
+
+# 查看技能列表
+docker exec webcodecli ls /root/.codex/skills/
+docker exec webcodecli ls /root/.claude/skills/
+
+# 重启容器
+docker restart webcodecli
+
+# 查看容器详细信息
+docker inspect webcodecli
+
+# 查看容器资源使用
+docker stats webcodecli
+```
+
+---
+
+**文档版本**: 3.0
 **更新日期**: 2026-01-14
 **维护者**: WebCode Team
+
+### 更新日志
+- v3.0 (2026-01-14): 合并 main 分支，添加快速开始和 Web 配置向导
+- v2.0 (2026-01-14): 添加技能文件挂载说明，更新部署脚本
+- v1.0 (2026-01-14): 初始版本
