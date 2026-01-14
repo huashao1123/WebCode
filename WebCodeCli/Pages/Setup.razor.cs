@@ -54,14 +54,22 @@ public partial class Setup : ComponentBase
         _claudeEnvVars = new List<EnvVarItem>
         {
             new() { Key = "ANTHROPIC_API_KEY", Value = "" },
-            new() { Key = "ANTHROPIC_BASE_URL", Value = "" }
+            new() { Key = "ANTHROPIC_BASE_URL", Value = "" },
+            new() { Key = "ANTHROPIC_MODEL", Value = "" },
+            new() { Key = "ANTHROPIC_SMALL_FAST_MODEL", Value = "" }
         };
 
         // Codex 默认环境变量
         _codexEnvVars = new List<EnvVarItem>
         {
             new() { Key = "NEW_API_KEY", Value = "" },
-            new() { Key = "CODEX_BASE_URL", Value = "" }
+            new() { Key = "CODEX_BASE_URL", Value = "" },
+            new() { Key = "CODEX_MODEL", Value = "" },
+            new() { Key = "CODEX_PROFILE", Value = "" },
+            new() { Key = "CODEX_PROVIDER_NAME", Value = "" },
+            new() { Key = "CODEX_APPROVAL_POLICY", Value = "" },
+            new() { Key = "CODEX_MODEL_REASONING_EFFORT", Value = "" },
+            new() { Key = "CODEX_SANDBOX_MODE", Value = "" }
         };
     }
 
