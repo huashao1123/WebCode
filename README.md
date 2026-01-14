@@ -252,20 +252,6 @@ WebCodeCli/
 > - **Linux/Mac 用户**：NPM 全局路径通常为 `/usr/local/bin/` 或 `~/.npm-global/bin/`
 > - 工作区目录建议使用绝对路径，确保有足够的磁盘空间
 
-## 📦 作为 .NET 模板使用
-
-本项目可作为 .NET CLI 模板快速创建新项目：
-
-```bash
-# 安装模板
-dotnet new install ./
-
-# 创建新项目
-dotnet new webcodecli -n YourProjectName
-
-# 卸载模板
-dotnet new uninstall WebCodeCli
-```
 
 ## 🤝 贡献
 
