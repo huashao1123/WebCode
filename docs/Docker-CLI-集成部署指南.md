@@ -96,7 +96,7 @@ NEW_API_KEY=your_codex_api_key_here
 
 ```bash
 # 构建镜像（首次需要较长时间）
-docker compose build
+docker compose build 
 
 # 启动服务（后台运行）
 docker compose up -d
