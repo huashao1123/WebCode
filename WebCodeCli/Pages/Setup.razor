@@ -1,18 +1,24 @@
 @page "/setup"
 @namespace WebCodeCli.Pages
 @using WebCodeCli.Domain.Domain.Service
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Routing
+@using WebCodeCli.Components
 
-<PageTitle>系统初始化 - WebCode</PageTitle>
+<PageTitle>@T("setup.pageTitle")</PageTitle>
 
 <div class="min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 py-8 px-4">
     <div class="max-w-4xl mx-auto">
+        <div class="flex justify-end mb-4">
+            <LanguageSwitcher OnLanguageChanged="HandleLanguageChanged" />
+        </div>
         <!-- 头部 Logo -->
         <div class="text-center mb-8">
             <div class="inline-flex items-center justify-center mb-4">
                 <img src="/images/logo.png" alt="WebCode Logo" class="w-20 h-20 object-contain" />
             </div>
-            <h1 class="text-3xl font-bold text-gray-800 mb-2">欢迎使用 WebCode</h1>
-            <p class="text-gray-600">首次使用需要完成系统初始化配置</p>
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">@T("setup.title")</h1>
+            <p class="text-gray-600">@T("setup.subtitle")</p>
         </div>
 
         <!-- 步骤指示器 -->
@@ -51,7 +57,7 @@
                 <div class="flex items-center justify-center py-20">
                     <div class="text-center">
                         <div class="animate-spin h-12 w-12 border-4 border-gray-700 rounded-full border-t-transparent mx-auto mb-4"></div>
-                        <p class="text-gray-600">正在处理...</p>
+                        <p class="text-gray-600">@T("setup.loading")</p>
                     </div>
                 </div>
             }
@@ -64,10 +70,10 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                         </svg>
                     </div>
-                    <h2 class="text-2xl font-bold text-gray-800 mb-4">配置完成！</h2>
-                    <p class="text-gray-600 mb-8">系统已成功初始化，现在可以开始使用了。</p>
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4">@T("setup.completedTitle")</h2>
+                    <p class="text-gray-600 mb-8">@T("setup.completedDesc")</p>
                     <button @onclick="GoToHome" class="btn-primary px-8 py-3 text-lg">
-                        开始使用
+                        @T("setup.start")
                     </button>
                 </div>
             }
@@ -104,7 +110,7 @@
 
         <!-- 页脚 -->
         <div class="mt-8 text-center text-sm text-gray-500">
-            <p>© 2026 WebCode. All rights reserved.</p>
+            <p>@T("setup.footer", ("year", DateTime.Now.Year.ToString()))</p>
         </div>
     </div>
 </div>
@@ -120,15 +126,15 @@
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
                 </svg>
-                账户设置
+                @T("setup.step1Header")
             </h2>
 
             <div class="space-y-6">
                 <!-- 启用认证 -->
                 <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200">
                     <div>
-                        <h3 class="font-semibold text-gray-800">启用登录认证</h3>
-                        <p class="text-sm text-gray-600">开启后需要登录才能使用系统</p>
+                        <h3 class="font-semibold text-gray-800">@T("setup.enableAuthTitle")</h3>
+                        <p class="text-sm text-gray-600">@T("setup.enableAuthDesc")</p>
                     </div>
                     <label class="relative inline-flex items-center cursor-pointer">
                         <input type="checkbox" @bind="_config.EnableAuth" class="sr-only peer">
@@ -140,18 +146,18 @@
                 {
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">管理员用户名</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">@T("setup.adminUsernameLabel")</label>
                             <input type="text" 
                                    @bind="_config.AdminUsername"
                                    class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
-                                   placeholder="请输入用户名" />
+                                   placeholder="@T("setup.adminUsernamePlaceholder")" />
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">管理员密码</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">@T("setup.adminPasswordLabel")</label>
                             <input type="password" 
                                    @bind="_config.AdminPassword"
                                    class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
-                                   placeholder="请输入密码" />
+                                   placeholder="@T("setup.adminPasswordPlaceholder")" />
                         </div>
                     </div>
                 }
@@ -159,15 +165,15 @@
                 <!-- 工作区目录 -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">
-                        工作区目录 
-                        <span class="text-gray-400 font-normal">(留空使用默认值)</span>
+                        @T("setup.workspaceRootLabel") 
+                        <span class="text-gray-400 font-normal">@T("setup.workspaceRootHint")</span>
                     </label>
                     <input type="text" 
                            @bind="_config.WorkspaceRoot"
                            class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
                            placeholder="@_defaultWorkspaceRoot" />
                     <p class="mt-2 text-sm text-gray-500">
-                        用于存放会话工作文件的目录。Docker 部署时建议使用默认值 <code class="bg-gray-100 px-1 rounded">/app/workspaces</code>
+                        @T("setup.workspaceRootDesc", ("path", "/app/workspaces"))
                     </p>
                 </div>
             </div>
@@ -175,7 +181,7 @@
             <!-- 底部按钮 -->
             <div class="flex justify-end mt-8 pt-6 border-t border-gray-200">
                 <button @onclick="NextStep" class="btn-primary">
-                    下一步
+                    @T("common.next")
                     <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
                     </svg>
@@ -194,7 +200,7 @@
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                 </svg>
-                Claude Code 配置
+                @T("setup.step2Header")
             </h2>
 
             <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
@@ -203,8 +209,8 @@
                         <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
                     </svg>
                     <div class="text-sm text-blue-800">
-                        <p class="font-bold mb-1">配置说明</p>
-                        <p>配置 Claude Code 所需的环境变量。如果暂时不使用，可以跳过此步骤，稍后在设置中配置。</p>
+                        <p class="font-bold mb-1">@T("setup.configTipTitle")</p>
+                        <p>@T("setup.claudeConfigDesc")</p>
                     </div>
                 </div>
             </div>
@@ -214,14 +220,14 @@
                 {
                     <div class="grid grid-cols-12 gap-4 items-end">
                         <div class="col-span-4">
-                            <label class="block text-sm font-medium text-gray-700 mb-2">环境变量名</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">@T("setup.envVarNameLabel")</label>
                             <input type="text" 
                                    @bind="envVar.Key"
                                    class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-1 focus:ring-gray-500"
-                                   placeholder="例如: ANTHROPIC_API_KEY" />
+                                   placeholder="@T("setup.envVarNamePlaceholderClaude")" />
                         </div>
                         <div class="col-span-7">
-                            <label class="block text-sm font-medium text-gray-700 mb-2">值</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">@T("setup.envVarValueLabel")</label>
                             <input type="text" 
                                    @bind="envVar.Value"
                                    class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-1 focus:ring-gray-500"
@@ -243,17 +249,17 @@
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                     </svg>
-                    添加环境变量
+                    @T("setup.addEnvVar")
                 </button>
             </div>
 
             <!-- 常用配置提示 -->
             <div class="mt-6 p-4 bg-gray-50 rounded-xl border border-gray-200">
-                <h4 class="font-semibold text-gray-700 mb-2">常用环境变量</h4>
+                <h4 class="font-semibold text-gray-700 mb-2">@T("setup.commonEnvVarsTitle")</h4>
                 <div class="text-sm text-gray-600 space-y-1">
-                    <p><code class="bg-gray-200 px-1 rounded">ANTHROPIC_API_KEY</code> - Anthropic API 密钥</p>
-                    <p><code class="bg-gray-200 px-1 rounded">ANTHROPIC_BASE_URL</code> - API 基础 URL（可选）</p>
-                    <p><code class="bg-gray-200 px-1 rounded">ANTHROPIC_MODEL</code> - 模型名称（可选）</p>
+                    <p><code class="bg-gray-200 px-1 rounded">ANTHROPIC_API_KEY</code> - @T("setup.claudeEnv.anthropicApiKey")</p>
+                    <p><code class="bg-gray-200 px-1 rounded">ANTHROPIC_BASE_URL</code> - @T("setup.claudeEnv.anthropicBaseUrl")</p>
+                    <p><code class="bg-gray-200 px-1 rounded">ANTHROPIC_MODEL</code> - @T("setup.claudeEnv.anthropicModel")</p>
                 </div>
             </div>
 
@@ -263,14 +269,14 @@
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
                     </svg>
-                    上一步
+                    @T("common.previous")
                 </button>
                 <div class="flex gap-3">
                     <button @onclick="SkipStep" class="btn-default">
-                        跳过
+                        @T("setup.skip")
                     </button>
                     <button @onclick="NextStep" class="btn-primary">
-                        下一步
+                        @T("common.next")
                         <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
                         </svg>
@@ -290,7 +296,7 @@
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
                 </svg>
-                Codex 配置
+                @T("setup.step3Header")
             </h2>
 
             <div class="bg-green-50 border border-green-200 rounded-xl p-4 mb-6">
@@ -299,8 +305,8 @@
                         <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
                     </svg>
                     <div class="text-sm text-green-800">
-                        <p class="font-bold mb-1">配置说明</p>
-                        <p>配置 Codex (OpenAI) 所需的环境变量。如果暂时不使用，可以跳过此步骤，稍后在设置中配置。</p>
+                        <p class="font-bold mb-1">@T("setup.configTipTitle")</p>
+                        <p>@T("setup.codexConfigDesc")</p>
                     </div>
                 </div>
             </div>
@@ -310,14 +316,14 @@
                 {
                     <div class="grid grid-cols-12 gap-4 items-end">
                         <div class="col-span-4">
-                            <label class="block text-sm font-medium text-gray-700 mb-2">环境变量名</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">@T("setup.envVarNameLabel")</label>
                             <input type="text" 
                                    @bind="envVar.Key"
                                    class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-1 focus:ring-gray-500"
-                                   placeholder="例如: OPENAI_API_KEY" />
+                                   placeholder="@T("setup.envVarNamePlaceholderCodex")" />
                         </div>
                         <div class="col-span-7">
-                            <label class="block text-sm font-medium text-gray-700 mb-2">值</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">@T("setup.envVarValueLabel")</label>
                             <input type="text" 
                                    @bind="envVar.Value"
                                    class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-1 focus:ring-gray-500"
@@ -339,23 +345,23 @@
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                     </svg>
-                    添加环境变量
+                    @T("setup.addEnvVar")
                 </button>
             </div>
 
             <!-- 常用配置提示 -->
             <div class="mt-6 p-4 bg-gray-50 rounded-xl border border-gray-200">
-                <h4 class="font-semibold text-gray-700 mb-2">常用环境变量</h4>
+                <h4 class="font-semibold text-gray-700 mb-2">@T("setup.commonEnvVarsTitle")</h4>
                 <div class="text-sm text-gray-600 space-y-1">
-                    <p><code class="bg-gray-200 px-1 rounded">NEW_API_KEY</code> - OpenAI API 密钥</p>
-                    <p><code class="bg-gray-200 px-1 rounded">CODEX_BASE_URL</code> - API 基础 URL（可选）</p>
-                    <p><code class="bg-gray-200 px-1 rounded">CODEX_MODEL</code> - 模型名称，如 glm-4.7（可选）</p>
-                    <p><code class="bg-gray-200 px-1 rounded">CODEX_PROFILE</code> - 配置文件名，如 webcode（可选）</p>
-                    <p><code class="bg-gray-200 px-1 rounded">CODEX_PROVIDER_NAME</code> - 提供者名称（可选）</p>
-                    <p><code class="bg-gray-200 px-1 rounded">CODEX_WIRE_API</code> - API 模式：chat/responses，默认 chat（可选）</p>
-                    <p><code class="bg-gray-200 px-1 rounded">CODEX_APPROVAL_POLICY</code> - 审批策略：never/always/unless-allow-listed（可选）</p>
-                    <p><code class="bg-gray-200 px-1 rounded">CODEX_MODEL_REASONING_EFFORT</code> - 推理强度：low/medium/high（可选）</p>
-                    <p><code class="bg-gray-200 px-1 rounded">CODEX_SANDBOX_MODE</code> - 沙箱模式：danger-full-access 等（可选）</p>
+                    <p><code class="bg-gray-200 px-1 rounded">NEW_API_KEY</code> - @T("setup.codexEnv.newApiKey")</p>
+                    <p><code class="bg-gray-200 px-1 rounded">CODEX_BASE_URL</code> - @T("setup.codexEnv.codexBaseUrl")</p>
+                    <p><code class="bg-gray-200 px-1 rounded">CODEX_MODEL</code> - @T("setup.codexEnv.codexModel")</p>
+                    <p><code class="bg-gray-200 px-1 rounded">CODEX_PROFILE</code> - @T("setup.codexEnv.codexProfile")</p>
+                    <p><code class="bg-gray-200 px-1 rounded">CODEX_PROVIDER_NAME</code> - @T("setup.codexEnv.codexProviderName")</p>
+                    <p><code class="bg-gray-200 px-1 rounded">CODEX_WIRE_API</code> - @T("setup.codexEnv.codexWireApi")</p>
+                    <p><code class="bg-gray-200 px-1 rounded">CODEX_APPROVAL_POLICY</code> - @T("setup.codexEnv.codexApprovalPolicy")</p>
+                    <p><code class="bg-gray-200 px-1 rounded">CODEX_MODEL_REASONING_EFFORT</code> - @T("setup.codexEnv.codexModelReasoningEffort")</p>
+                    <p><code class="bg-gray-200 px-1 rounded">CODEX_SANDBOX_MODE</code> - @T("setup.codexEnv.codexSandboxMode")</p>
                 </div>
             </div>
 
@@ -365,14 +371,14 @@
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
                     </svg>
-                    上一步
+                    @T("common.previous")
                 </button>
                 <div class="flex gap-3">
                     <button @onclick="SkipAndComplete" class="btn-default">
-                        跳过并完成
+                        @T("setup.skipAndComplete")
                     </button>
                     <button @onclick="CompleteSetup" class="btn-primary">
-                        完成配置
+                        @T("setup.completeSetup")
                         <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                         </svg>

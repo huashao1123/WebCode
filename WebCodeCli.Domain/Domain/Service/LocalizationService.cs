@@ -22,7 +22,8 @@ public class LocalizationService : ILocalizationService
     {
         try
         {
-            var language = await _jsRuntime.InvokeAsync<string>("localizationHelper.getCurrentLanguage");
+            // 确保本地化初始化完成（会从 IndexedDB 读取语言）
+            var language = await _jsRuntime.InvokeAsync<string>("localizationHelper.init");
             if (!string.IsNullOrEmpty(language))
             {
                 _currentLanguage = language;

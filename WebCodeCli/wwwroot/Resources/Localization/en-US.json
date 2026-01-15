@@ -259,6 +259,29 @@
       "removeDuplicatesDesc": "Remove duplicated code snippets and file references"
     }
   },
+  "login": {
+    "pageTitle": "Login - WebCode",
+    "subtitle": "Programming assistant platform",
+    "title": "Login",
+    "username": "Username",
+    "usernamePlaceholder": "Enter username",
+    "password": "Password",
+    "passwordPlaceholder": "Enter password",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "loggingIn": "Logging in...",
+    "login": "Login",
+    "footer": "© {year} WebCode. All rights reserved.",
+    "githubTitle": "Visit GitHub repository",
+    "validation": {
+      "usernameRequired": "Please enter a username",
+      "passwordRequired": "Please enter a password"
+    },
+    "error": {
+      "invalidCredentials": "Invalid username or password",
+      "loginFailed": "Login failed: {message}"
+    }
+  },
   "progressTracker": {
     "stageInit": "Initializing",
     "stageAnalyze": "Analyzing",
@@ -427,6 +450,84 @@
     "changeModified": "Modified",
     "changeDeleted": "Deleted",
     "changeRenamed": "Renamed"
+  },
+  "setup": {
+    "pageTitle": "System Initialization - WebCode",
+    "title": "Welcome to WebCode",
+    "subtitle": "Complete system initialization for first-time use",
+    "loading": "Processing...",
+    "completedTitle": "Setup Complete!",
+    "completedDesc": "The system has been initialized successfully. You can start now.",
+    "start": "Get Started",
+    "footer": "© {year} WebCode. All rights reserved.",
+    "step1Title": "Account",
+    "step2Title": "Claude Code",
+    "step3Title": "Codex",
+    "step1Header": "Account Settings",
+    "step2Header": "Claude Code Setup",
+    "step3Header": "Codex Setup",
+    "enableAuthTitle": "Enable Login Authentication",
+    "enableAuthDesc": "When enabled, login is required to use the system",
+    "adminUsernameLabel": "Admin Username",
+    "adminUsernamePlaceholder": "Enter username",
+    "adminPasswordLabel": "Admin Password",
+    "adminPasswordPlaceholder": "Enter password",
+    "workspaceRootLabel": "Workspace Directory",
+    "workspaceRootHint": "(Leave blank to use default)",
+    "workspaceRootDesc": "Directory for session workspace files. For Docker deployments, use default {path}.",
+    "configTipTitle": "Configuration",
+    "claudeConfigDesc": "Configure environment variables required for Claude Code. You can skip this step and set it later in settings.",
+    "codexConfigDesc": "Configure environment variables required for Codex (OpenAI). You can skip this step and set it later in settings.",
+    "envVarNameLabel": "Env Var Name",
+    "envVarValueLabel": "Value",
+    "envVarNamePlaceholderClaude": "e.g.: ANTHROPIC_API_KEY",
+    "envVarNamePlaceholderCodex": "e.g.: OPENAI_API_KEY",
+    "addEnvVar": "Add Environment Variable",
+    "commonEnvVarsTitle": "Common Environment Variables",
+    "skip": "Skip",
+    "skipAndComplete": "Skip and Complete",
+    "completeSetup": "Complete Setup",
+    "validation": {
+      "adminUsernameRequired": "Please enter admin username",
+      "adminPasswordRequired": "Please enter admin password",
+      "passwordTooShort": "Password must be at least {min} characters"
+    },
+    "error": {
+      "saveFailed": "Failed to save configuration. Please try again.",
+      "configFailed": "Configuration failed: {message}"
+    },
+    "placeholders": {
+      "anthropicApiKey": "sk-ant-api03-...",
+      "anthropicBaseUrl": "https://api.antsk.cn (default)",
+      "anthropicModel": "glm-4.7 (default)",
+      "anthropicSmallFastModel": "glm-4.7",
+      "newApiKey": "sk-...",
+      "codexBaseUrl": "https://api.antsk.cn/v1 (default)",
+      "codexModel": "glm-4.7 (default)",
+      "codexProfile": "webcode (default)",
+      "codexProviderName": "webcode codex (default)",
+      "codexWireApi": "chat (default, optional: chat/responses)",
+      "codexApprovalPolicy": "never (default, optional: always/unless-allow-listed)",
+      "codexModelReasoningEffort": "medium (default, optional: low/high)",
+      "codexSandboxMode": "danger-full-access (default)",
+      "default": "Enter a value"
+    },
+    "claudeEnv": {
+      "anthropicApiKey": "Anthropic API key",
+      "anthropicBaseUrl": "API base URL (optional)",
+      "anthropicModel": "Model name (optional)"
+    },
+    "codexEnv": {
+      "newApiKey": "OpenAI API key",
+      "codexBaseUrl": "API base URL (optional)",
+      "codexModel": "Model name, e.g. glm-4.7 (optional)",
+      "codexProfile": "Profile name, e.g. webcode (optional)",
+      "codexProviderName": "Provider name (optional)",
+      "codexWireApi": "API mode: chat/responses, default chat (optional)",
+      "codexApprovalPolicy": "Approval policy: never/always/unless-allow-listed (optional)",
+      "codexModelReasoningEffort": "Reasoning effort: low/medium/high (optional)",
+      "codexSandboxMode": "Sandbox mode: danger-full-access, etc. (optional)"
+    }
   },
   "errors": {
     "networkError": "Network error, please check connection",

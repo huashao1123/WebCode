@@ -259,6 +259,29 @@
       "removeDuplicatesDesc": "重複したコード片やファイル参照を削除"
     }
   },
+  "login": {
+    "pageTitle": "ログイン - WebCode",
+    "subtitle": "プログラミングアシスタントプラットフォーム",
+    "title": "ログイン",
+    "username": "ユーザー名",
+    "usernamePlaceholder": "ユーザー名を入力",
+    "password": "パスワード",
+    "passwordPlaceholder": "パスワードを入力",
+    "showPassword": "パスワードを表示",
+    "hidePassword": "パスワードを隠す",
+    "loggingIn": "ログイン中...",
+    "login": "ログイン",
+    "footer": "© {year} WebCode. All rights reserved.",
+    "githubTitle": "GitHub リポジトリを開く",
+    "validation": {
+      "usernameRequired": "ユーザー名を入力してください",
+      "passwordRequired": "パスワードを入力してください"
+    },
+    "error": {
+      "invalidCredentials": "ユーザー名またはパスワードが正しくありません",
+      "loginFailed": "ログイン失敗: {message}"
+    }
+  },
   "progressTracker": {
     "stageInit": "初期化",
     "stageAnalyze": "分析中",
@@ -427,6 +450,84 @@
     "changeModified": "変更",
     "changeDeleted": "削除",
     "changeRenamed": "名前変更"
+  },
+  "setup": {
+    "pageTitle": "システム初期化 - WebCode",
+    "title": "WebCodeへようこそ",
+    "subtitle": "初回利用にはシステム初期化の設定が必要です",
+    "loading": "処理中...",
+    "completedTitle": "設定完了！",
+    "completedDesc": "システムの初期化が完了しました。利用を開始できます。",
+    "start": "開始する",
+    "footer": "© {year} WebCode. All rights reserved.",
+    "step1Title": "アカウント",
+    "step2Title": "Claude Code",
+    "step3Title": "Codex",
+    "step1Header": "アカウント設定",
+    "step2Header": "Claude Code 設定",
+    "step3Header": "Codex 設定",
+    "enableAuthTitle": "ログイン認証を有効化",
+    "enableAuthDesc": "有効化するとログインが必要になります",
+    "adminUsernameLabel": "管理者ユーザー名",
+    "adminUsernamePlaceholder": "ユーザー名を入力",
+    "adminPasswordLabel": "管理者パスワード",
+    "adminPasswordPlaceholder": "パスワードを入力",
+    "workspaceRootLabel": "ワークスペースディレクトリ",
+    "workspaceRootHint": "(空欄で既定値を使用)",
+    "workspaceRootDesc": "セッション作業ファイルを保存するディレクトリ。Docker では既定値 {path} の使用を推奨します。",
+    "configTipTitle": "設定の説明",
+    "claudeConfigDesc": "Claude Code に必要な環境変数を設定します。不要な場合はスキップして後で設定できます。",
+    "codexConfigDesc": "Codex (OpenAI) に必要な環境変数を設定します。不要な場合はスキップして後で設定できます。",
+    "envVarNameLabel": "環境変数名",
+    "envVarValueLabel": "値",
+    "envVarNamePlaceholderClaude": "例: ANTHROPIC_API_KEY",
+    "envVarNamePlaceholderCodex": "例: OPENAI_API_KEY",
+    "addEnvVar": "環境変数を追加",
+    "commonEnvVarsTitle": "よく使う環境変数",
+    "skip": "スキップ",
+    "skipAndComplete": "スキップして完了",
+    "completeSetup": "設定を完了",
+    "validation": {
+      "adminUsernameRequired": "管理者ユーザー名を入力してください",
+      "adminPasswordRequired": "管理者パスワードを入力してください",
+      "passwordTooShort": "パスワードは {min} 文字以上必要です"
+    },
+    "error": {
+      "saveFailed": "設定の保存に失敗しました。もう一度お試しください。",
+      "configFailed": "設定に失敗しました: {message}"
+    },
+    "placeholders": {
+      "anthropicApiKey": "sk-ant-api03-...",
+      "anthropicBaseUrl": "https://api.antsk.cn (既定)",
+      "anthropicModel": "glm-4.7 (既定)",
+      "anthropicSmallFastModel": "glm-4.7",
+      "newApiKey": "sk-...",
+      "codexBaseUrl": "https://api.antsk.cn/v1 (既定)",
+      "codexModel": "glm-4.7 (既定)",
+      "codexProfile": "webcode (既定)",
+      "codexProviderName": "webcode codex (既定)",
+      "codexWireApi": "chat (既定、任意: chat/responses)",
+      "codexApprovalPolicy": "never (既定、任意: always/unless-allow-listed)",
+      "codexModelReasoningEffort": "medium (既定、任意: low/high)",
+      "codexSandboxMode": "danger-full-access (既定)",
+      "default": "値を入力"
+    },
+    "claudeEnv": {
+      "anthropicApiKey": "Anthropic APIキー",
+      "anthropicBaseUrl": "API ベース URL（任意）",
+      "anthropicModel": "モデル名（任意）"
+    },
+    "codexEnv": {
+      "newApiKey": "OpenAI APIキー",
+      "codexBaseUrl": "API ベース URL（任意）",
+      "codexModel": "モデル名（例: glm-4.7）（任意）",
+      "codexProfile": "プロファイル名（例: webcode）（任意）",
+      "codexProviderName": "プロバイダー名（任意）",
+      "codexWireApi": "API モード: chat/responses、既定 chat（任意）",
+      "codexApprovalPolicy": "承認ポリシー: never/always/unless-allow-listed（任意）",
+      "codexModelReasoningEffort": "推論強度: low/medium/high（任意）",
+      "codexSandboxMode": "サンドボックスモード: danger-full-access など（任意）"
+    }
   },
   "errors": {
     "networkError": "ネットワークエラー、接続を確認してください",

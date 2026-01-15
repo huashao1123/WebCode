@@ -259,6 +259,29 @@
       "removeDuplicatesDesc": "移除重复的代码片段和文件引用"
     }
   },
+  "login": {
+    "pageTitle": "登录 - WebCode",
+    "subtitle": "编程助手平台",
+    "title": "登录",
+    "username": "用户名",
+    "usernamePlaceholder": "请输入用户名",
+    "password": "密码",
+    "passwordPlaceholder": "请输入密码",
+    "showPassword": "显示密码",
+    "hidePassword": "隐藏密码",
+    "loggingIn": "登录中...",
+    "login": "登录",
+    "footer": "© {year} WebCode. All rights reserved.",
+    "githubTitle": "访问 GitHub 仓库",
+    "validation": {
+      "usernameRequired": "请输入用户名",
+      "passwordRequired": "请输入密码"
+    },
+    "error": {
+      "invalidCredentials": "用户名或密码错误",
+      "loginFailed": "登录失败: {message}"
+    }
+  },
   "progressTracker": {
     "stageInit": "初始化",
     "stageAnalyze": "分析中",
@@ -427,6 +450,84 @@
     "changeModified": "修改",
     "changeDeleted": "删除",
     "changeRenamed": "重命名"
+  },
+  "setup": {
+    "pageTitle": "系统初始化 - WebCode",
+    "title": "欢迎使用 WebCode",
+    "subtitle": "首次使用需要完成系统初始化配置",
+    "loading": "正在处理...",
+    "completedTitle": "配置完成！",
+    "completedDesc": "系统已成功初始化，现在可以开始使用了。",
+    "start": "开始使用",
+    "footer": "© {year} WebCode. All rights reserved.",
+    "step1Title": "账户设置",
+    "step2Title": "Claude Code",
+    "step3Title": "Codex",
+    "step1Header": "账户设置",
+    "step2Header": "Claude Code 配置",
+    "step3Header": "Codex 配置",
+    "enableAuthTitle": "启用登录认证",
+    "enableAuthDesc": "开启后需要登录才能使用系统",
+    "adminUsernameLabel": "管理员用户名",
+    "adminUsernamePlaceholder": "请输入用户名",
+    "adminPasswordLabel": "管理员密码",
+    "adminPasswordPlaceholder": "请输入密码",
+    "workspaceRootLabel": "工作区目录",
+    "workspaceRootHint": "(留空使用默认值)",
+    "workspaceRootDesc": "用于存放会话工作文件的目录。Docker 部署时建议使用默认值 {path}",
+    "configTipTitle": "配置说明",
+    "claudeConfigDesc": "配置 Claude Code 所需的环境变量。如果暂时不使用，可以跳过此步骤，稍后在设置中配置。",
+    "codexConfigDesc": "配置 Codex (OpenAI) 所需的环境变量。如果暂时不使用，可以跳过此步骤，稍后在设置中配置。",
+    "envVarNameLabel": "环境变量名",
+    "envVarValueLabel": "值",
+    "envVarNamePlaceholderClaude": "例如: ANTHROPIC_API_KEY",
+    "envVarNamePlaceholderCodex": "例如: OPENAI_API_KEY",
+    "addEnvVar": "添加环境变量",
+    "commonEnvVarsTitle": "常用环境变量",
+    "skip": "跳过",
+    "skipAndComplete": "跳过并完成",
+    "completeSetup": "完成配置",
+    "validation": {
+      "adminUsernameRequired": "请输入管理员用户名",
+      "adminPasswordRequired": "请输入管理员密码",
+      "passwordTooShort": "密码长度至少为 {min} 位"
+    },
+    "error": {
+      "saveFailed": "保存配置失败，请重试",
+      "configFailed": "配置失败: {message}"
+    },
+    "placeholders": {
+      "anthropicApiKey": "sk-ant-api03-...",
+      "anthropicBaseUrl": "https://api.antsk.cn (默认)",
+      "anthropicModel": "glm-4.7 (默认)",
+      "anthropicSmallFastModel": "glm-4.7",
+      "newApiKey": "sk-...",
+      "codexBaseUrl": "https://api.antsk.cn/v1 (默认)",
+      "codexModel": "glm-4.7 (默认)",
+      "codexProfile": "webcode (默认)",
+      "codexProviderName": "webcode codex (默认)",
+      "codexWireApi": "chat (默认，可选: chat/responses)",
+      "codexApprovalPolicy": "never (默认，可选: always/unless-allow-listed)",
+      "codexModelReasoningEffort": "medium (默认，可选: low/high)",
+      "codexSandboxMode": "danger-full-access (默认)",
+      "default": "请输入值"
+    },
+    "claudeEnv": {
+      "anthropicApiKey": "Anthropic API 密钥",
+      "anthropicBaseUrl": "API 基础 URL（可选）",
+      "anthropicModel": "模型名称（可选）"
+    },
+    "codexEnv": {
+      "newApiKey": "OpenAI API 密钥",
+      "codexBaseUrl": "API 基础 URL（可选）",
+      "codexModel": "模型名称，如 glm-4.7（可选）",
+      "codexProfile": "配置文件名，如 webcode（可选）",
+      "codexProviderName": "提供者名称（可选）",
+      "codexWireApi": "API 模式：chat/responses，默认 chat（可选）",
+      "codexApprovalPolicy": "审批策略：never/always/unless-allow-listed（可选）",
+      "codexModelReasoningEffort": "推理强度：low/medium/high（可选）",
+      "codexSandboxMode": "沙箱模式：danger-full-access 等（可选）"
+    }
   },
   "errors": {
     "networkError": "网络错误，请检查连接",
