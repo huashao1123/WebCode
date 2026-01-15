@@ -223,6 +223,28 @@ window.localizationHelper = (function() {
         }
     }
 
+    /**
+     * 从服务器获取翻译文件
+     * @param {string} filePath - 翻译文件路径
+     * @returns {Promise<string>} 翻译文件内容（JSON字符串）
+     */
+    async function fetchTranslationFile(filePath) {
+        try {
+            console.log(`📥 正在加载翻译文件: ${filePath}`);
+            const response = await fetch(filePath);
+            if (!response.ok) {
+                console.error(`❌ 加载翻译文件失败: HTTP ${response.status}`);
+                return '';
+            }
+            const json = await response.text();
+            console.log(`✅ 翻译文件加载成功: ${filePath}`);
+            return json;
+        } catch (error) {
+            console.error(`❌ 加载翻译文件失败: ${error.message}`);
+            return '';
+        }
+    }
+
     // 初始化
     init();
 
@@ -236,7 +258,8 @@ window.localizationHelper = (function() {
         t: translate, // 简写别名
         getSupportedLanguages,
         formatDate,
-        formatNumber
+        formatNumber,
+        fetchTranslationFile
     };
 })();
 

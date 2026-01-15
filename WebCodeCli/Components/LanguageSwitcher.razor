@@ -1,38 +1,57 @@
 @namespace WebCodeCli.Components
+@implements IDisposable
 @inject WebCodeCli.Domain.Domain.Service.ILocalizationService LocalizationService
 @inject IJSRuntime JSRuntime
 
-<div class="relative inline-block text-left">
+@* 点击外部关闭下拉菜单的遮罩层 *@
+@if (_isOpen)
+{
+    <div class="fixed inset-0 z-40" @onclick="CloseDropdown" @onclick:stopPropagation="false"></div>
+}
+
+<div class="relative inline-block text-left z-50">
     <button @onclick="ToggleDropdown" 
+            @onclick:stopPropagation="true"
             class="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
             type="button">
         <!-- Globe Icon -->
         <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"></path>
         </svg>
-        <span>@GetLanguageDisplayName(_currentLanguage)</span>
+        <span class="hidden sm:inline">@GetLanguageDisplayName(_currentLanguage)</span>
         <!-- Dropdown Arrow -->
-        <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-4 h-4 text-gray-600 transition-transform duration-200 @(_isOpen ? "rotate-180" : "")" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
         </svg>
     </button>
 
     @if (_isOpen)
     {
-        <div class="absolute right-0 z-50 mt-2 w-48 origin-top-right rounded-lg bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+        <div class="absolute right-0 z-50 mt-2 w-48 origin-top-right rounded-lg bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none animate-in fade-in slide-in-from-top-2 duration-200"
+             @onclick:stopPropagation="true">
             <div class="py-1" role="menu">
                 @foreach (var lang in _supportedLanguages)
                 {
                     <button @onclick="() => ChangeLanguage(lang.Code)"
-                            class="@GetLanguageItemClass(lang.Code) w-full text-left px-4 py-2 text-sm transition-colors"
+                            @onclick:stopPropagation="true"
+                            disabled="@_isChangingLanguage"
+                            class="@GetLanguageItemClass(lang.Code) w-full text-left px-4 py-2 text-sm transition-colors disabled:opacity-50"
                             role="menuitem">
                         <div class="flex items-center justify-between">
                             <span>@lang.NativeName</span>
                             @if (_currentLanguage == lang.Code)
                             {
                                 <!-- Checkmark Icon -->
-                                <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                            }
+                            else if (_isChangingLanguage && _targetLanguage == lang.Code)
+                            {
+                                <!-- Loading spinner -->
+                                <svg class="w-4 h-4 text-blue-600 animate-spin" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                 </svg>
                             }
                         </div>
@@ -46,7 +65,9 @@
 
 @code {
     private bool _isOpen = false;
+    private bool _isChangingLanguage = false;
     private string _currentLanguage = "zh-CN";
+    private string _targetLanguage = "";
     private List<WebCodeCli.Domain.Domain.Service.LanguageInfo> _supportedLanguages = new();
 
     [Parameter]
@@ -55,7 +76,15 @@
     protected override async Task OnInitializedAsync()
     {
         _supportedLanguages = LocalizationService.GetSupportedLanguages();
-        _currentLanguage = await LocalizationService.GetCurrentLanguageAsync();
+        try
+        {
+            _currentLanguage = await LocalizationService.GetCurrentLanguageAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"获取当前语言失败: {ex.Message}");
+            _currentLanguage = "zh-CN";
+        }
     }
 
     private void ToggleDropdown()
@@ -63,21 +92,49 @@
         _isOpen = !_isOpen;
     }
 
-    private async Task ChangeLanguage(string languageCode)
+    private void CloseDropdown()
     {
         _isOpen = false;
-        
-        if (_currentLanguage != languageCode)
+    }
+
+    private async Task ChangeLanguage(string languageCode)
+    {
+        if (_isChangingLanguage || _currentLanguage == languageCode)
         {
-            _currentLanguage = languageCode;
+            _isOpen = false;
+            return;
+        }
+
+        _isChangingLanguage = true;
+        _targetLanguage = languageCode;
+        StateHasChanged();
+        
+        try
+        {
+            // 先保存语言设置到本地存储
             await LocalizationService.SetCurrentLanguageAsync(languageCode);
-            await LocalizationService.ReloadTranslationsAsync();
             
-            // Notify parent component
+            // 更新本地状态
+            _currentLanguage = languageCode;
+            
+            // 关闭下拉菜单
+            _isOpen = false;
+            
+            // 通知父组件语言已更改
             await OnLanguageChanged.InvokeAsync(languageCode);
             
-            // Reload the page to apply new language
-            await JSRuntime.InvokeVoidAsync("location.reload");
+            // 稍微延迟后刷新页面，确保设置已保存
+            await Task.Delay(100);
+            
+            // 使用 JS 刷新页面以应用新语言
+            await JSRuntime.InvokeVoidAsync("eval", "window.location.reload()");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"切换语言失败: {ex.Message}");
+            _isChangingLanguage = false;
+            _targetLanguage = "";
+            StateHasChanged();
         }
     }
 
@@ -91,7 +148,12 @@
     {
         var baseClass = "hover:bg-gray-100";
         return _currentLanguage == languageCode
-            ? $"{baseClass} bg-gray-50 font-semibold text-gray-900"
+            ? $"{baseClass} bg-blue-50 font-semibold text-blue-700"
             : $"{baseClass} text-gray-700";
+    }
+
+    public void Dispose()
+    {
+        // 清理资源（如果有的话）
     }
 }

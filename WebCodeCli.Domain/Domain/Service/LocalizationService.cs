@@ -105,16 +105,19 @@ public class LocalizationService : ILocalizationService
 
         try
         {
-            // 从文件加载翻译（使用绝对路径）
-            var filePath = $"/{_resourcePath}/{language}.json";
-            var httpClient = new HttpClient
-            {
-                BaseAddress = new Uri("https://localhost") // 这会被浏览器忽略，使用当前域名
-            };
-            var json = await httpClient.GetStringAsync(filePath);
+            // 使用 JavaScript fetch 来加载翻译文件
+            var filePath = $"./Resources/Localization/{language}.json";
+            var json = await _jsRuntime.InvokeAsync<string>("localizationHelper.fetchTranslationFile", filePath);
             
-            var translations = JsonSerializer.Deserialize<Dictionary<string, object>>(json) 
-                              ?? new Dictionary<string, object>();
+            if (string.IsNullOrEmpty(json))
+            {
+                Console.WriteLine($"翻译文件为空 ({language})");
+                return new Dictionary<string, object>();
+            }
+            
+            var translations = JsonSerializer.Deserialize<Dictionary<string, object>>(json, 
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) 
+                ?? new Dictionary<string, object>();
 
             _translationsCache[language] = translations;
             
