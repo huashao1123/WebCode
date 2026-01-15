@@ -1,5 +1,7 @@
 using System.Text.Json;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using WebCodeCli.Domain.Common.Extensions;
 using WebCodeCli.Domain.Domain.Model;
 
 namespace WebCodeCli.Domain.Domain.Service;
@@ -7,6 +9,7 @@ namespace WebCodeCli.Domain.Domain.Service;
 /// <summary>
 /// 前端项目检测服务实现
 /// </summary>
+[ServiceDescription(typeof(IFrontendProjectDetector), ServiceLifetime.Singleton)]
 public class FrontendProjectDetector : IFrontendProjectDetector
 {
     private readonly ILogger<FrontendProjectDetector> _logger;

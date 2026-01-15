@@ -1,11 +1,14 @@
 using System.Text.Json;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.JSInterop;
+using WebCodeCli.Domain.Common.Extensions;
 
 namespace WebCodeCli.Domain.Domain.Service;
 
 /// <summary>
 /// 本地化服务实现
 /// </summary>
+[ServiceDescription(typeof(ILocalizationService), ServiceLifetime.Scoped)]
 public class LocalizationService : ILocalizationService
 {
     private readonly IJSRuntime _jsRuntime;

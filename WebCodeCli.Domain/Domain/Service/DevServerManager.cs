@@ -4,7 +4,9 @@ using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Text;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using WebCodeCli.Domain.Common.Extensions;
 using WebCodeCli.Domain.Domain.Model;
 
 namespace WebCodeCli.Domain.Domain.Service;
@@ -12,6 +14,7 @@ namespace WebCodeCli.Domain.Domain.Service;
 /// <summary>
 /// 开发服务器管理服务实现
 /// </summary>
+[ServiceDescription(typeof(IDevServerManager), ServiceLifetime.Singleton)]
 public class DevServerManager : IDevServerManager, IDisposable
 {
     private readonly ILogger<DevServerManager> _logger;

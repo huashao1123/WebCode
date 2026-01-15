@@ -1,5 +1,7 @@
 using System.Text;
 using System.Text.Json;
+using Microsoft.Extensions.DependencyInjection;
+using WebCodeCli.Domain.Common.Extensions;
 using WebCodeCli.Domain.Domain.Model;
 
 namespace WebCodeCli.Domain.Domain.Service;
@@ -7,6 +9,7 @@ namespace WebCodeCli.Domain.Domain.Service;
 /// <summary>
 /// 上下文管理服务实现
 /// </summary>
+[ServiceDescription(typeof(IContextManagerService), ServiceLifetime.Singleton)]
 public class ContextManagerService : IContextManagerService
 {
     private readonly Dictionary<string, List<ContextItem>> _sessionContexts = new();

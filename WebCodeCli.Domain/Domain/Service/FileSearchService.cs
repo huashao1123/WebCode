@@ -1,4 +1,6 @@
 using System.Text.RegularExpressions;
+using Microsoft.Extensions.DependencyInjection;
+using WebCodeCli.Domain.Common.Extensions;
 using WebCodeCli.Domain.Domain.Model;
 
 namespace WebCodeCli.Domain.Domain.Service;
@@ -6,6 +8,7 @@ namespace WebCodeCli.Domain.Domain.Service;
 /// <summary>
 /// 文件搜索服务实现
 /// </summary>
+[ServiceDescription(typeof(IFileSearchService), ServiceLifetime.Singleton)]
 public class FileSearchService : IFileSearchService
 {
     /// <summary>

@@ -1,4 +1,6 @@
 using LibGit2Sharp;
+using Microsoft.Extensions.DependencyInjection;
+using WebCodeCli.Domain.Common.Extensions;
 using WebCodeCli.Domain.Domain.Model;
 
 namespace WebCodeCli.Domain.Domain.Service;
@@ -6,6 +8,7 @@ namespace WebCodeCli.Domain.Domain.Service;
 /// <summary>
 /// Git 服务实现
 /// </summary>
+[ServiceDescription(typeof(IGitService), ServiceLifetime.Singleton)]
 public class GitService : IGitService
 {
     /// <summary>

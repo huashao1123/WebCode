@@ -54,29 +54,8 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddServicesFromAssemblies("WebCodeCli", "WebCodeCli.Domain");
 
-// 添加上下文管理服务
-builder.Services.AddSingleton<IContextManagerService, ContextManagerService>();
-
-// 添加 Git 集成服务
-builder.Services.AddSingleton<IGitService, GitService>();
-
-// 添加文件监控服务
-builder.Services.AddSingleton<IFileMonitorService, FileMonitorService>();
-
-// 添加文件搜索服务
-builder.Services.AddSingleton<IFileSearchService, FileSearchService>();
-
-// 添加前端项目检测服务
-builder.Services.AddSingleton<IFrontendProjectDetector, FrontendProjectDetector>();
-
-// 添加开发服务器管理服务
-builder.Services.AddSingleton<IDevServerManager, DevServerManager>();
-
 // 添加 YARP 反向代理
 builder.Services.AddHttpForwarder();
-
-// 添加本地化服务
-builder.Services.AddScoped<ILocalizationService, LocalizationService>();
 
 // 添加工作区清理后台服务
 builder.Services.AddHostedService<WorkspaceCleanupBackgroundService>();
@@ -119,6 +98,12 @@ builder.Logging.AddSerilog(Log.Logger);
 
 
 var app = builder.Build();
+
+// 启用响应压缩（必须在其他中间件之前）
+app.UseResponseCompression();
+
+// 启用 CORS
+app.UseCors("Any");
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

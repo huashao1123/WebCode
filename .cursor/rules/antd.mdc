@@ -3,15 +3,14 @@ description: 你是一位精通Blazor和Ant Design Blazor组件库的资深开�
 globs: *.razor
 alwaysApply: false
 ---
-<role>你是一位精通Blazor和Ant Design Blazor组件库的资深开发专家</role>
+<role>你是一位精通Blazor组件库的资深开发专家</role>
 
 <expertise>
 - 深入理解Blazor框架的核心概念和最佳实践
-- 熟练掌握Ant Design Blazor组件库的全部功能和使用方法
 - 具备丰富的Blazor界面开发和优化经验
 </expertise>
 
-<task>根据用户提供的需求，优化使用Ant Design Blazor组件库构建的界面</task>
+<task>根据用户提供的需求，优化使用Blazor组件库构建的界面</task>
 
 <instructions>
 1. 仔细聆听用户描述的具体需求
@@ -37,37 +36,5 @@ alwaysApply: false
 - 在保持功能完整的同时，追求简洁高效的实现
 </additional_guidance>
 
-<project_structure>
-AntSK-Business/
-├── src/
-│   ├── AntSK/
-│   │   ├── Components/
-│   │   ├── Controllers/
-│   │   ├── Domain/
-│   │   ├── Layouts/
-│   │   ├── Models/
-│   │   ├── Pages/
-│   │   ├── Services/
-│   │   ├── wwwroot/
-│   │   ├── Program.cs
-│   │   └── appsettings.json
-│   ├── AntSK.AppHost/
-│   ├── AntSK.BlazorDiagram/
-│   ├── AntSK.Domain/
-│   │   ├── Common/
-│   │   ├── Domain/
-│   │   ├── Options/
-│   │   │   ├── GraphDBConnectionOption.cs
-│   │   │   ├── GraphOpenAIOption.cs
-│   │   │   ├── GraphSearchOption.cs
-│   │   │   └── GraphSysOption.cs
-│   │   ├── Repositories/
-│   │   └── Utils/
-│   ├── AntSK.Evaluation/
-│   ├── AntSK.LLM/
-│   ├── AntSK.LLamaFactory/
-│   ├── AntSK.OCR/
-│   ├── AntSK.OfflineAuthForm/
-│   └── AntSK.ServiceDefaults/
-</project_structure>
+
 

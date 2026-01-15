@@ -1,4 +1,6 @@
 using System.Collections.Concurrent;
+using Microsoft.Extensions.DependencyInjection;
+using WebCodeCli.Domain.Common.Extensions;
 using WebCodeCli.Domain.Domain.Model;
 
 namespace WebCodeCli.Domain.Domain.Service;
@@ -6,6 +8,7 @@ namespace WebCodeCli.Domain.Domain.Service;
 /// <summary>
 /// 文件监控服务实现
 /// </summary>
+[ServiceDescription(typeof(IFileMonitorService), ServiceLifetime.Singleton)]
 public class FileMonitorService : IFileMonitorService, IDisposable
 {
     private readonly ConcurrentDictionary<string, FileSystemWatcher> _watchers = new();
