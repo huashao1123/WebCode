@@ -66,7 +66,7 @@ OpenAI Codex v0.46.0 (research preview)
 --------
 workdir: D:\git\WebCodeCli
 model: gpt-5-codex
-provider: ipsa
+provider: webcode
 ...
 --------
 user

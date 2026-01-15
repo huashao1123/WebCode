@@ -4,21 +4,21 @@
 model = "glm-4.7"
 model_reasoning_effort = "medium"
 
-profile = "ipsa"
+profile = "webcode"
 windows_wsl_setup_acknowledged = true
 
-[model_providers.ipsa]
+[model_providers.webcode]
 name = "azure codex-mini"
 base_url = "https://api.antsk.cn/v1"
 env_key = "NEW_API_KEY"
 wire_api = "chat"
 
 
-[profiles.ipsa]
+[profiles.webcode]
 # 深度模型
 model = "glm-4.7"
 # provider id
-model_provider = "ipsa"
+model_provider = "webcode"
 # 审批策略
 approval_policy = "never"
 # 推理强度

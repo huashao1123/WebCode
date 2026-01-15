@@ -17,7 +17,7 @@ OpenAI Codex v0.53.0 (research preview)
 --------
 workdir: D:\Temp\WebCodeCli\Workspaces\77ce780e-845a-40d9-bed9-7a00b27b5be1
 model: gpt-5-codex
-provider: ipsa
+provider: webcode
 approval: never
 sandbox: danger-full-access
 reasoning effort: high

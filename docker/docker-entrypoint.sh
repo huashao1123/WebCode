@@ -29,21 +29,21 @@ cat > "${CODEX_CONFIG_FILE}" << EOF
 model = "${CODEX_MODEL:-glm-4.7}"
 model_reasoning_effort = "${CODEX_MODEL_REASONING_EFFORT:-medium}"
 
-profile = "${CODEX_PROFILE:-ipsa}"
+profile = "${CODEX_PROFILE:-webcode}"
 windows_wsl_setup_acknowledged = true
 
-[model_providers.${CODEX_PROFILE:-ipsa}]
+[model_providers.${CODEX_PROFILE:-webcode}]
 name = "${CODEX_PROVIDER_NAME:-azure codex-mini}"
 base_url = "${CODEX_BASE_URL:-https://api.antsk.cn/v1}"
 env_key = "NEW_API_KEY"
 wire_api = "chat"
 
 
-[profiles.${CODEX_PROFILE:-ipsa}]
+[profiles.${CODEX_PROFILE:-webcode}]
 # 深度模型
 model = "${CODEX_MODEL:-glm-4.7}"
 # provider id
-model_provider = "${CODEX_PROFILE:-ipsa}"
+model_provider = "${CODEX_PROFILE:-webcode}"
 # 审批策略
 approval_policy = "${CODEX_APPROVAL_POLICY:-never}"
 # 推理强度

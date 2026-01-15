@@ -128,7 +128,7 @@ docker compose logs -f
 | `NEW_API_KEY` | **是** | - | Codex API 密钥 |
 | `CODEX_MODEL` | 否 | `glm-4.7` | Codex 使用的模型 |
 | `CODEX_MODEL_REASONING_EFFORT` | 否 | `medium` | 推理强度 (low/medium/high) |
-| `CODEX_PROFILE` | 否 | `ipsa` | 配置文件名称 |
+| `CODEX_PROFILE` | 否 | `webcode` | 配置文件名称 |
 | `CODEX_BASE_URL` | 否 | `https://api.antsk.cn/v1` | Codex API 基础 URL |
 | `CODEX_PROVIDER_NAME` | 否 | `azure codex-mini` | 提供商名称 |
 | `CODEX_APPROVAL_POLICY` | 否 | `never` | 审批策略 (never/suggest/always) |
@@ -185,21 +185,21 @@ Codex CLI 需要配置 `~/.codex/config.toml` 文件。Docker 容器启动时会
 model = "glm-4.7"
 model_reasoning_effort = "medium"
 
-profile = "ipsa"
+profile = "webcode"
 windows_wsl_setup_acknowledged = true
 
-[model_providers.ipsa]
+[model_providers.webcode]
 name = "azure codex-mini"
 base_url = "https://api.antsk.cn/v1"
 env_key = "NEW_API_KEY"
 wire_api = "chat"
 
 
-[profiles.ipsa]
+[profiles.webcode]
 # 深度模型
 model = "glm-4.7"
 # provider id
-model_provider = "ipsa"
+model_provider = "webcode"
 # 审批策略
 approval_policy = "never"
 # 推理强度
