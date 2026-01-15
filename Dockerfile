@@ -74,12 +74,12 @@ RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain stable
 # ============================================
 # 安装 Claude Code CLI
 # ============================================
-RUN npm install -g @anthropic-ai/claude-code
+RUN npm install -g @anthropic-ai/claude-code --registry=https://registry.npmmirror.com
 
 # ============================================
 # 安装 Codex CLI（指定版本 0.80.0）
 # ============================================
-RUN npm install -g @openai/codex@0.80.0
+RUN npm install -g @openai/codex@0.80.0 --registry=https://registry.npmmirror.com
 
 # 创建 Codex 配置目录
 RUN mkdir -p /root/.codex
