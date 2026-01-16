@@ -70,6 +70,23 @@ fi
 
 echo ""
 
+# 创建数据目录并修复权限
+fix_data_permissions() {
+    echo -e "${GREEN}正在设置数据目录权限...${NC}"
+
+    # 确保数据目录存在
+    mkdir -p webcodecli-data webcodecli-logs webcodecli-workspaces
+
+    # 修复权限为 UID 1001 (容器内 appuser 用户)
+    sudo chown -R 1001:1001 webcodecli-data webcodecli-logs webcodecli-workspaces 2>/dev/null || {
+        echo -e "${YELLOW}警告: 无法使用 sudo 修改权限${NC}"
+        echo -e "${YELLOW}如果容器无法创建数据库，请手动运行:${NC}"
+        echo "  sudo chown -R 1001:1001 webcodecli-data webcodecli-logs webcodecli-workspaces"
+    }
+
+    echo -e "${GREEN}✓ 数据目录权限已设置${NC}"
+}
+
 # 选择操作
 echo "请选择操作:"
 echo "  1) 构建并启动 (首次部署)"
@@ -87,6 +104,7 @@ read -p "请输入选项 [1-9]: " choice
 case $choice in
     1)
         echo -e "${GREEN}正在构建并启动...${NC}"
+        fix_data_permissions
         docker compose build --no-cache
         docker compose up -d
         echo ""
@@ -95,6 +113,7 @@ case $choice in
         ;;
     2)
         echo -e "${GREEN}正在启动服务...${NC}"
+        fix_data_permissions
         docker compose up -d
         echo ""
         echo -e "${GREEN}✓ 启动完成！${NC}"
@@ -103,6 +122,7 @@ case $choice in
     3)
         echo -e "${GREEN}正在重新构建并启动...${NC}"
         docker compose down
+        fix_data_permissions
         docker compose build --no-cache
         docker compose up -d
         echo ""
@@ -140,6 +160,7 @@ case $choice in
         echo -e "${GREEN}正在清理旧镜像并重新构建...${NC}"
         docker compose down
         docker rmi webcodecli:latest 2>/dev/null || echo "旧镜像不存在，跳过"
+        fix_data_permissions
         docker compose build --no-cache
         docker compose up -d
         echo ""
