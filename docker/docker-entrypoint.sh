@@ -115,9 +115,14 @@ mkdir -p /app/data
 mkdir -p /app/workspaces
 mkdir -p /app/logs
 
-# 修复目录权限（应用以 appuser 运行）
-echo "Fixing directory permissions..."
-chown -R appuser:appuser /app/data /app/workspaces /app/logs 2>/dev/null || echo "Note: Could not change ownership (mounted volumes)"
+# 修复目录权限（entrypoint 以 root 运行，可以修改挂载卷权限）
+echo "Fixing directory permissions for mounted volumes..."
+chown -R appuser:appuser /app/data /app/workspaces /app/logs /app 2>/dev/null || echo "Note: Some directories could not be chown'd"
+
+# 修复 home 目录权限
+if [ -d "/home/appuser" ]; then
+    chown -R appuser:appuser /home/appuser 2>/dev/null || true
+fi
 
 # ============================================
 # 配置 Claude Code Skills
@@ -148,10 +153,10 @@ fi
 echo ""
 
 # ============================================
-# 启动应用
+# 启动应用（切换到 appuser 用户运行）
 # ============================================
-echo "Starting WebCodeCli application..."
+echo "Starting WebCodeCli application as appuser..."
 echo "============================================"
 
-# 执行传入的命令（默认是 dotnet WebCodeCli.dll）
-exec "$@"
+# 使用 gosu 切换到 appuser 用户执行命令
+exec gosu appuser "$@"

@@ -24,7 +24,7 @@ if ! command -v docker &> /dev/null; then
 fi
 
 # 检查 Docker Compose 是否可用
-if ! docker compose version &> /dev/null; then
+if ! docker-compose version &> /dev/null; then
     echo -e "${RED}错误: Docker Compose 未安装${NC}"
     echo "请先安装 Docker Compose: https://docs.docker.com/compose/install/"
     exit 1
@@ -32,7 +32,7 @@ fi
 
 echo -e "${GREEN}✓ Docker 已安装${NC}"
 docker --version
-docker compose version
+docker-compose version
 echo ""
 
 # 检查 .env 文件
@@ -77,12 +77,31 @@ fix_data_permissions() {
     # 确保数据目录存在
     mkdir -p webcodecli-data webcodecli-logs webcodecli-workspaces
 
-    # 修复权限为 UID 1001 (容器内 appuser 用户)
-    sudo chown -R 1001:1001 webcodecli-data webcodecli-logs webcodecli-workspaces 2>/dev/null || {
-        echo -e "${YELLOW}警告: 无法使用 sudo 修改权限${NC}"
-        echo -e "${YELLOW}如果容器无法创建数据库，请手动运行:${NC}"
-        echo "  sudo chown -R 1001:1001 webcodecli-data webcodecli-logs webcodecli-workspaces"
-    }
+    # 检测是否为 root 用户
+    if [ "$EUID" -eq 0 ]; then
+        # root 用户可以直接修改权限
+        chown -R 1001:1001 webcodecli-data webcodecli-logs webcodecli-workspaces
+    elif command -v sudo &> /dev/null; then
+        # 非 root 用户但有 sudo 权限
+        sudo chown -R 1001:1001 webcodecli-data webcodecli-logs webcodecli-workspaces
+    else
+        # 非 root 用户且没有 sudo
+        # 检查目录是否已经是正确的所有权
+        stat_result=$(stat -c "%u:%g" webcodecli-data 2>/dev/null || echo "")
+        if [ "$stat_result" = "1001:1001" ]; then
+            echo -e "${GREEN}✓ 数据目录权限正确${NC}"
+        else
+            echo -e "${YELLOW}警告: 无法使用 sudo 修改权限${NC}"
+            echo -e "${YELLOW}当前目录所有者为: $(stat -c "%u:%g" webcodecli-data 2>/dev/null || echo "未知")${NC}"
+            echo -e "${YELLOW}容器将尝试在启动时自动修复权限${NC}"
+            echo -e "${YELLOW}如果容器启动后仍有权限问题，请手动运行:${NC}"
+            echo "  sudo chown -R 1001:1001 webcodecli-data webcodecli-logs webcodecli-workspaces"
+        fi
+    fi
+
+    # 设置正确的目录权限 (755 for dirs, 644 for files)
+    find webcodecli-data webcodecli-logs webcodecli-workspaces -type d -exec chmod 755 {} \; 2>/dev/null || true
+    find webcodecli-data webcodecli-logs webcodecli-workspaces -type f -exec chmod 644 {} \; 2>/dev/null || true
 
     echo -e "${GREEN}✓ 数据目录权限已设置${NC}"
 }
@@ -105,8 +124,8 @@ case $choice in
     1)
         echo -e "${GREEN}正在构建并启动...${NC}"
         fix_data_permissions
-        docker compose build --no-cache
-        docker compose up -d
+        docker-compose build --no-cache
+        docker-compose up -d
         echo ""
         echo -e "${GREEN}✓ 部署完成！${NC}"
         echo "访问地址: http://localhost:${APP_PORT:-5000}"
@@ -114,43 +133,43 @@ case $choice in
     2)
         echo -e "${GREEN}正在启动服务...${NC}"
         fix_data_permissions
-        docker compose up -d
+        docker-compose up -d
         echo ""
         echo -e "${GREEN}✓ 启动完成！${NC}"
         echo "访问地址: http://localhost:${APP_PORT:-5000}"
         ;;
     3)
         echo -e "${GREEN}正在重新构建并启动...${NC}"
-        docker compose down
+        docker-compose down
         fix_data_permissions
-        docker compose build --no-cache
-        docker compose up -d
+        docker-compose build --no-cache
+        docker-compose up -d
         echo ""
         echo -e "${GREEN}✓ 重新部署完成！${NC}"
         echo "访问地址: http://localhost:${APP_PORT:-5000}"
         ;;
     4)
         echo -e "${YELLOW}正在停止服务...${NC}"
-        docker compose down
+        docker-compose down
         echo -e "${GREEN}✓ 服务已停止${NC}"
         ;;
     5)
         echo -e "${GREEN}查看日志 (Ctrl+C 退出):${NC}"
-        docker compose logs -f
+        docker-compose logs -f
         ;;
     6)
         echo -e "${GREEN}服务状态:${NC}"
-        docker compose ps
+        docker-compose ps
         ;;
     7)
         echo -e "${GREEN}进入容器...${NC}"
-        docker compose exec webcodecli /bin/bash
+        docker-compose exec webcodecli /bin/bash
         ;;
     8)
         echo -e "${RED}警告: 此操作将删除所有数据！${NC}"
         read -p "确认删除? (输入 'yes' 确认): " confirm
         if [ "$confirm" = "yes" ]; then
-            docker compose down -v
+            docker-compose down -v
             echo -e "${GREEN}✓ 已完全重置${NC}"
         else
             echo "操作已取消"
@@ -158,11 +177,11 @@ case $choice in
         ;;
     9)
         echo -e "${GREEN}正在清理旧镜像并重新构建...${NC}"
-        docker compose down
+        docker-compose down
         docker rmi webcodecli:latest 2>/dev/null || echo "旧镜像不存在，跳过"
         fix_data_permissions
-        docker compose build --no-cache
-        docker compose up -d
+        docker-compose build --no-cache
+        docker-compose up -d
         echo ""
         echo -e "${GREEN}✓ 清理并重新部署完成！${NC}"
         echo "访问地址: http://localhost:${APP_PORT:-5000}"

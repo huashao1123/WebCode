@@ -60,6 +60,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
+# 安装 gosu（用于降权执行）
+RUN dpkgArch="$(dpkg --print-architecture | awk -F- '{ print $NF }')" \
+    && wget -O /usr/local/bin/gosu "https://github.com/tianon/gosu/releases/download/1.17/gosu-$dpkgArch" \
+    && wget -O /usr/local/bin/gosu.asc "https://github.com/tianon/gosu/releases/download/1.17/gosu-$dpkgArch.asc" \
+    && export GNUPGHOME="$(mktemp -d)" \
+    && gpg --batch --keyserver hkps://keys.openpgp.org --recv-keys B42F6819007F00F88E364FD4036A9C25BF357DD4 \
+    && gpg --batch --verify /usr/local/bin/gosu.asc /usr/local/bin/gosu \
+    && command -v gpgconf && gpgconf --kill all || : \
+    && rm -rf "$GNUPGHOME" /usr/local/bin/gosu.asc \
+    && chmod +x /usr/local/bin/gosu \
+    && gosu --version
+
 # 配置 pip 国内镜像
 RUN pip3 config set global.index-url https://mirrors.aliyun.com/pypi/simple/
 
@@ -104,26 +116,20 @@ RUN claude --version || echo "Claude CLI installed" \
 # 创建数据和工作区目录
 RUN mkdir -p /app/data /app/workspaces /app/logs
 
-# 复制发布文件
+# ============================================
+# 创建非 root 用户以提高安全性
+# ============================================
+RUN groupadd -r appuser && useradd -r -g appuser -u 1001 -m appuser
+
+# 复制发布文件（在切换用户之前）
 COPY --from=publish /app/publish .
 
-# 复制 Docker 启动脚本
+# 复制 Docker 启动脚本（以 root 权限运行，用于修复挂载卷权限）
 COPY docker/docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh
 
 # 复制 Claude Code Skills 到容器
 COPY skills/ /app/skills/
-
-# ============================================
-# 创建非 root 用户以提高安全性
-# ============================================
-RUN groupadd -r appuser && useradd -r -g appuser -u 1001 -m appuser \
-    && chown -R appuser:appuser /app \
-    && mkdir -p /webcode/workspace \
-    && chown -R appuser:appuser /webcode
-
-# 切换到非 root 用户
-USER appuser
 
 # 暴露端口
 EXPOSE 5000
