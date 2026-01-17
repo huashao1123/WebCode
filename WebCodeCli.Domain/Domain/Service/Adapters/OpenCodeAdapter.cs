@@ -267,20 +267,20 @@ public class OpenCodeAdapter : ICliToolAdapter
     public string GetEventBadgeClass(CliOutputEvent outputEvent)
     {
         if (outputEvent.IsError)
-            return "badge-error";
+            return "bg-red-100 text-red-700";
 
         return outputEvent.EventType switch
         {
-            "session_start" => "badge-info",
-            "step_start" => "badge-info",
-            "step_finish" => "badge-info",
-            "message" or "text" => "badge-success",
-            "tool_start" => "badge-primary",
-            "tool_finish" => "badge-secondary",
-            "tool_use" => "badge-primary",
-            "tool_result" => "badge-secondary",
-            "session_end" or "complete" => "badge-info",
-            _ => "badge-default"
+            "session_start" => "bg-primary-100 text-primary-700",
+            "step_start" => "bg-sky-100 text-sky-700",
+            "step_finish" => "bg-emerald-100 text-emerald-700",
+            "message" or "text" => "bg-emerald-100 text-emerald-700",
+            "tool_start" => "bg-sky-100 text-sky-700",
+            "tool_finish" => "bg-blue-100 text-blue-700",
+            "tool_use" => "bg-sky-100 text-sky-700",
+            "tool_result" => "bg-blue-100 text-blue-700",
+            "session_end" or "complete" => "bg-emerald-100 text-emerald-700",
+            _ => "bg-gray-200 text-gray-700"
         };
     }
 

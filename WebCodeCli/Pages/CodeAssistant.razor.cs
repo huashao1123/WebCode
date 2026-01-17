@@ -1457,6 +1457,14 @@ public partial class CodeAssistant : ComponentBase, IAsyncDisposable
             "system" => "border-l-4 border-gray-400 bg-gray-50",
             "user" => "border-l-4 border-blue-400 bg-blue-50",
             "raw" => "border-l-4 border-gray-200 bg-white",
+            // OpenCode事件类型
+            "session_start" => "border-l-4 border-primary-500 bg-primary-50",
+            "step_start" => "border-l-4 border-sky-400 bg-sky-50",
+            "step_finish" => "border-l-4 border-emerald-400 bg-emerald-50",
+            "text" => "border-l-4 border-emerald-400 bg-emerald-50",
+            "tool_start" => "border-l-4 border-sky-400 bg-sky-50",
+            "tool_finish" => "border-l-4 border-blue-300 bg-blue-50",
+            "session_end" or "complete" => "border-l-4 border-emerald-400 bg-emerald-50",
             _ => "border-l-4 border-gray-200 bg-white"
         };
     }
@@ -1502,6 +1510,14 @@ public partial class CodeAssistant : ComponentBase, IAsyncDisposable
             "system" => "bg-gray-100 text-gray-700",
             "user" => "bg-blue-100 text-blue-700",
             "raw" => "bg-gray-200 text-gray-700",
+            // OpenCode事件类型
+            "session_start" => "bg-primary-100 text-primary-700",
+            "step_start" => "bg-sky-100 text-sky-700",
+            "step_finish" => "bg-emerald-100 text-emerald-700",
+            "text" => "bg-emerald-100 text-emerald-700",
+            "tool_start" => "bg-sky-100 text-sky-700",
+            "tool_finish" => "bg-blue-100 text-blue-700",
+            "session_end" or "complete" => "bg-emerald-100 text-emerald-700",
             _ => "bg-gray-200 text-gray-700"
         };
     }
@@ -1547,6 +1563,14 @@ public partial class CodeAssistant : ComponentBase, IAsyncDisposable
             "system" => T("cliEvent.badge.system"),
             "user" => T("cliEvent.badge.input"),
             "raw" => T("cliEvent.badge.output"),
+            // OpenCode事件类型
+            "session_start" => T("cliEvent.badge.sessionStart"),
+            "step_start" => T("cliEvent.badge.stepStart"),
+            "step_finish" => T("cliEvent.badge.turnEnd"),
+            "text" => T("cliEvent.badge.reply"),
+            "tool_start" => T("cliEvent.badge.toolUse"),
+            "tool_finish" => T("cliEvent.badge.toolResult"),
+            "session_end" or "complete" => T("cliEvent.badge.result"),
             _ => T("cliEvent.badge.event")
         };
     }
