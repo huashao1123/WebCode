@@ -3884,6 +3884,28 @@ public partial class CodeAssistant : ComponentBase, IAsyncDisposable
                 messagesJson = System.Text.Json.JsonSerializer.Serialize(messagesToShare);
             }
             
+            // 序列化输出事件为JSON（如果分享的是当前会话且有JSONL事件）
+            string? outputEventsJson = null;
+            if (session.SessionId == _sessionId && _jsonlEvents != null && _jsonlEvents.Count > 0)
+            {
+                // 将 _jsonlEvents 序列化为可存储的格式
+                var outputEvents = _jsonlEvents.Select(evt => new
+                {
+                    Type = evt.Type,
+                    Title = evt.Title,
+                    Content = evt.Content,
+                    ItemType = evt.ItemType,
+                    IsUnknown = evt.IsUnknown,
+                    Usage = evt.Usage == null ? null : new
+                    {
+                        evt.Usage.InputTokens,
+                        evt.Usage.CachedInputTokens,
+                        evt.Usage.OutputTokens
+                    }
+                }).ToList();
+                outputEventsJson = System.Text.Json.JsonSerializer.Serialize(outputEvents);
+            }
+            
             await _shareSessionModal.ShowAsync(
                 session.SessionId,
                 session.Title,
@@ -3891,7 +3913,8 @@ public partial class CodeAssistant : ComponentBase, IAsyncDisposable
                 session.WorkspacePath,
                 messagesJson,
                 session.CreatedAt,
-                session.UpdatedAt
+                session.UpdatedAt,
+                outputEventsJson
             );
         }
     }

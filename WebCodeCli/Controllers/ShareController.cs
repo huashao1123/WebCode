@@ -189,7 +189,8 @@ public class ShareController : ControllerBase
                 UpdatedAt = sessionData.UpdatedAt,
                 MessagesJson = sessionData.MessagesJson,
                 sessionData.WorkspacePath,
-                sessionData.IsWorkspaceValid
+                sessionData.IsWorkspaceValid,
+                sessionData.OutputEventsJson
             });
         }
         catch (Exception ex)

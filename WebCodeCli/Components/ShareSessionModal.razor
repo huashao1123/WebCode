@@ -371,10 +371,12 @@
     private string? _messagesJson;
     private DateTime? _sessionCreatedAt;
     private DateTime? _sessionUpdatedAt;
+    private string? _outputEventsJson;
 
     public async Task ShowAsync(string sessionId, string? sessionTitle = null, string? toolId = null, 
         string? workspacePath = null, string? messagesJson = null, 
-        DateTime? sessionCreatedAt = null, DateTime? sessionUpdatedAt = null)
+        DateTime? sessionCreatedAt = null, DateTime? sessionUpdatedAt = null,
+        string? outputEventsJson = null)
     {
         SessionId = sessionId;
         _sessionTitle = sessionTitle;
@@ -382,6 +384,7 @@
         _workspacePath = workspacePath;
         _messagesJson = messagesJson;
         _sessionCreatedAt = sessionCreatedAt;
+        _outputEventsJson = outputEventsJson;
         _sessionUpdatedAt = sessionUpdatedAt;
         
         _isVisible = true;
@@ -451,7 +454,8 @@
                 WorkspacePath = _workspacePath,
                 MessagesJson = _messagesJson,
                 SessionCreatedAt = _sessionCreatedAt,
-                SessionUpdatedAt = _sessionUpdatedAt
+                SessionUpdatedAt = _sessionUpdatedAt,
+                OutputEventsJson = _outputEventsJson
             };
 
             var response = await Http.PostAsJsonAsync("/api/share", request);
@@ -546,7 +550,8 @@
                 ToolId = _toolId,
                 WorkspacePath = _workspacePath,
                 MessagesJson = _messagesJson,
-                SessionUpdatedAt = DateTime.Now
+                SessionUpdatedAt = DateTime.Now,
+                OutputEventsJson = _outputEventsJson
             };
 
             var response = await Http.PutAsJsonAsync($"/api/share/{shareCode}/snapshot", request);

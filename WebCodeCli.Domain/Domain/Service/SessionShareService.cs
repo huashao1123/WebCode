@@ -74,7 +74,8 @@ public class SessionShareService : ISessionShareService
             WorkspacePath = request.WorkspacePath,
             MessagesJson = request.MessagesJson,
             SessionCreatedAt = request.SessionCreatedAt,
-            SessionUpdatedAt = request.SessionUpdatedAt
+            SessionUpdatedAt = request.SessionUpdatedAt,
+            OutputEventsJson = request.OutputEventsJson
         };
         
         var success = await _repository.InsertAsync(share);
@@ -130,7 +131,8 @@ public class SessionShareService : ISessionShareService
             MessagesJson = share.MessagesJson,
             CreatedAt = share.SessionCreatedAt,
             UpdatedAt = share.SessionUpdatedAt,
-            IsWorkspaceValid = isWorkspaceValid
+            IsWorkspaceValid = isWorkspaceValid,
+            OutputEventsJson = share.OutputEventsJson
         };
     }
     
@@ -408,7 +410,8 @@ public class SessionShareService : ISessionShareService
             request.ToolId,
             request.WorkspacePath,
             request.MessagesJson,
-            request.SessionUpdatedAt);
+            request.SessionUpdatedAt,
+            request.OutputEventsJson);
         
         if (result)
         {

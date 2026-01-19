@@ -142,7 +142,7 @@ public class SessionShareRepository : Repository<SessionShare>, ISessionShareRep
     /// 更新分享的会话数据快照
     /// </summary>
     public async Task<bool> UpdateSnapshotAsync(string shareCode, string? sessionTitle, string? toolId, 
-        string? workspacePath, string? messagesJson, DateTime? sessionUpdatedAt)
+        string? workspacePath, string? messagesJson, DateTime? sessionUpdatedAt, string? outputEventsJson = null)
     {
         var share = await GetByShareCodeAsync(shareCode);
         if (share == null)
@@ -156,6 +156,7 @@ public class SessionShareRepository : Repository<SessionShare>, ISessionShareRep
         share.WorkspacePath = workspacePath;
         share.MessagesJson = messagesJson;
         share.SessionUpdatedAt = sessionUpdatedAt ?? DateTime.Now;
+        share.OutputEventsJson = outputEventsJson;
         
         return await UpdateAsync(share);
     }

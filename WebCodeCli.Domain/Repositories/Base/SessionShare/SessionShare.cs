@@ -121,6 +121,12 @@ public class SessionShare
     /// </summary>
     [SugarColumn(IsNullable = true)]
     public DateTime? SessionUpdatedAt { get; set; }
+    
+    /// <summary>
+    /// 输出事件 (JSON格式，存储JSONL事件列表)
+    /// </summary>
+    [SugarColumn(ColumnDataType = "TEXT", IsNullable = true)]
+    public string? OutputEventsJson { get; set; }
 }
 
 /// <summary>
@@ -177,6 +183,11 @@ public class CreateShareRequest
     /// 会话更新时间
     /// </summary>
     public DateTime? SessionUpdatedAt { get; set; }
+    
+    /// <summary>
+    /// 输出事件 (JSON格式，存储JSONL事件列表)
+    /// </summary>
+    public string? OutputEventsJson { get; set; }
 }
 
 /// <summary>
@@ -321,6 +332,11 @@ public class SharedSessionData
     /// 工作区是否有效
     /// </summary>
     public bool IsWorkspaceValid { get; set; }
+    
+    /// <summary>
+    /// 输出事件 (JSON格式，存储JSONL事件列表)
+    /// </summary>
+    public string? OutputEventsJson { get; set; }
 }
 
 /// <summary>
@@ -352,4 +368,9 @@ public class UpdateShareSnapshotRequest
     /// 会话更新时间
     /// </summary>
     public DateTime? SessionUpdatedAt { get; set; }
+    
+    /// <summary>
+    /// 输出事件 (JSON格式，存储JSONL事件列表)
+    /// </summary>
+    public string? OutputEventsJson { get; set; }
 }

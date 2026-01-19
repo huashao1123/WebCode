@@ -2,6 +2,7 @@
 @namespace WebCodeCli.Pages
 @using WebCodeCli.Domain.Domain.Model
 @using System.Text
+@using System.Text.Json
 @using Markdig
 @inject HttpClient Http
 @inject NavigationManager NavigationManager
@@ -188,13 +189,69 @@
                         <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
                         </svg>
-                        <span class="text-sm text-gray-600 font-medium">聊天记录 (@(_sessionInfo?.Messages?.Count ?? 0) 条消息)</span>
+                        <span class="text-sm text-gray-600 font-medium">
+                            @if (HasOutputEvents)
+                            {
+                                <text>输出结果 (@OutputEventCount 条事件)</text>
+                            }
+                            else
+                            {
+                                <text>聊天记录 (@ChatMessageCount 条消息)</text>
+                            }
+                        </span>
                     </div>
 
-                    <!-- 聊天消息列表 -->
+                    <!-- 内容列表 -->
                     <div class="flex-1 overflow-auto p-4 space-y-3">
-                        @if (_sessionInfo?.Messages?.Any() == true)
+                        @if (HasOutputEvents)
                         {
+                            <!-- 显示输出事件（与 CodeAssistant 输出结果区一致） -->
+                            @foreach (var evt in _sessionInfo!.OutputEvents!)
+                            {
+                                var badgeClass = GetOutputEventBadgeClass(evt.Type);
+                                var badgeLabel = GetOutputEventBadgeLabel(evt.Type);
+                                var containerClass = GetOutputEventContainerClass(evt.Type);
+                                
+                                <div class="@containerClass border border-gray-200 rounded-lg p-4 shadow-sm transition-colors">
+                                    <div class="flex items-center justify-between gap-3">
+                                        <div class="flex items-center gap-2">
+                                            <span class="@badgeClass text-xs font-semibold px-2 py-0.5 rounded-full">@badgeLabel</span>
+                                            <span class="text-sm font-semibold text-gray-800">@evt.Title</span>
+                                        </div>
+                                        <span class="text-xs text-gray-400">@evt.Type</span>
+                                    </div>
+                                    @if (!string.IsNullOrEmpty(evt.Content))
+                                    {
+                                        <div class="mt-2 text-sm text-gray-700 leading-relaxed break-words prose prose-sm max-w-none">
+                                            @((MarkupString)RenderMarkdown(evt.Content))
+                                        </div>
+                                    }
+                                    @if (evt.Usage != null)
+                                    {
+                                        <div class="mt-3 bg-gray-50 border border-dashed border-gray-200 rounded-lg px-3 py-2">
+                                            <div class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Token 使用情况</div>
+                                            <div class="mt-2 grid grid-cols-3 gap-2 text-xs text-gray-600">
+                                                <div class="flex flex-col">
+                                                    <span class="font-medium text-gray-500">输入</span>
+                                                    <span class="font-mono text-sm text-gray-800">@evt.Usage.InputTokens.ToString("N0")</span>
+                                                </div>
+                                                <div class="flex flex-col">
+                                                    <span class="font-medium text-gray-500">缓存输入</span>
+                                                    <span class="font-mono text-sm text-gray-800">@evt.Usage.CachedInputTokens.ToString("N0")</span>
+                                                </div>
+                                                <div class="flex flex-col">
+                                                    <span class="font-medium text-gray-500">输出</span>
+                                                    <span class="font-mono text-sm text-gray-800">@evt.Usage.OutputTokens.ToString("N0")</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        }
+                        else if (_sessionInfo?.Messages?.Any() == true)
+                        {
+                            <!-- 回退：显示聊天消息 -->
                             @foreach (var message in _sessionInfo.Messages)
                             {
                                 <div class="@(message.Role == "user" ? "bg-white border-l-4 border-gray-300 shadow-sm" : "bg-gray-50 border-l-4 border-blue-500 shadow-sm") rounded-xl p-4 hover:shadow-md transition-all border border-gray-100 overflow-hidden">
@@ -326,6 +383,11 @@
     private string _language = "plaintext";
     private string _imagePreviewUrl = string.Empty;
     private string _htmlPreviewUrl = string.Empty;
+    
+    // 计算属性
+    private bool HasOutputEvents => _sessionInfo?.OutputEvents?.Any() == true;
+    private int OutputEventCount => _sessionInfo?.OutputEvents?.Count ?? 0;
+    private int ChatMessageCount => _sessionInfo?.Messages?.Count ?? 0;
 
     private static readonly MarkdownPipeline _markdownPipeline = new MarkdownPipelineBuilder()
         .UseAdvancedExtensions()
@@ -630,6 +692,150 @@
         }
     }
 
+    private bool IsJsonlContent(string content)
+    {
+        if (string.IsNullOrWhiteSpace(content))
+        {
+            return false;
+        }
+
+        // 只要任意一行是 JSONL 事件，就视为 JSONL 内容
+        var lines = content.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        return lines.Any(line =>
+        {
+            var trimmed = line.Trim();
+            return trimmed.StartsWith("{") && trimmed.Contains("\"type\":");
+        });
+    }
+
+    private string RenderJsonlContent(string content)
+    {
+        var html = new StringBuilder();
+        html.Append("<div class=\"space-y-2\">");
+
+        var lines = content.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        foreach (var line in lines)
+        {
+            var trimmedLine = line.Trim();
+            if (string.IsNullOrEmpty(trimmedLine))
+            {
+                continue;
+            }
+
+            try
+            {
+                using var document = JsonDocument.Parse(trimmedLine);
+                var root = document.RootElement;
+
+                if (!root.TryGetProperty("type", out var typeElement))
+                {
+                    continue;
+                }
+
+                var eventType = typeElement.GetString() ?? string.Empty;
+                var badgeClass = GetJsonlBadgeClass(eventType);
+                var badgeLabel = GetJsonlBadgeLabel(eventType);
+
+                html.Append("<div class=\"border border-gray-200 rounded-lg p-3 bg-white\">");
+                html.Append($"<span class=\"{badgeClass} text-xs font-semibold px-2 py-0.5 rounded-full\">{badgeLabel}</span>");
+
+                if (root.TryGetProperty("content", out var contentElement) && contentElement.ValueKind == JsonValueKind.String)
+                {
+                    var eventContent = contentElement.GetString();
+                    if (!string.IsNullOrEmpty(eventContent))
+                    {
+                        html.Append($"<div class=\"mt-2 text-sm text-gray-700 whitespace-pre-wrap\">{System.Net.WebUtility.HtmlEncode(eventContent)}</div>");
+                    }
+                }
+
+                html.Append("</div>");
+            }
+            catch (JsonException)
+            {
+                // 忽略无效的 JSON 行
+                continue;
+            }
+        }
+
+        html.Append("</div>");
+        return html.ToString();
+    }
+
+    private string GetJsonlBadgeClass(string eventType)
+    {
+        return eventType switch
+        {
+            "thread.started" => "bg-primary-100 text-primary-700",
+            "turn.started" => "bg-sky-100 text-sky-700",
+            "turn.completed" => "bg-emerald-100 text-emerald-700",
+            "turn.failed" => "bg-red-100 text-red-700",
+            "item.started" => "bg-amber-100 text-amber-700",
+            "item.updated" => "bg-blue-100 text-blue-700",
+            "item.completed" => "bg-green-100 text-green-700",
+            "error" => "bg-red-100 text-red-700",
+            _ => "bg-gray-200 text-gray-700"
+        };
+    }
+
+    private string GetJsonlBadgeLabel(string eventType)
+    {
+        return eventType switch
+        {
+            "thread.started" => "线程启动",
+            "turn.started" => "交互开始",
+            "turn.completed" => "交互完成",
+            "turn.failed" => "交互失败",
+            "item.started" => "节点开始",
+            "item.updated" => "节点更新",
+            "item.completed" => "节点完成",
+            "error" => "错误",
+            _ => eventType
+        };
+    }
+    
+    private string GetOutputEventBadgeClass(string eventType)
+    {
+        return eventType switch
+        {
+            "thread.started" => "bg-indigo-100 text-indigo-700",
+            "turn.started" => "bg-sky-100 text-sky-700",
+            "turn.completed" => "bg-emerald-100 text-emerald-700",
+            "turn.failed" => "bg-red-100 text-red-700",
+            "item.started" => "bg-amber-100 text-amber-700",
+            "item.updated" => "bg-blue-100 text-blue-700",
+            "item.completed" => "bg-green-100 text-green-700",
+            "error" => "bg-red-100 text-red-700",
+            _ => "bg-gray-200 text-gray-700"
+        };
+    }
+    
+    private string GetOutputEventBadgeLabel(string eventType)
+    {
+        return eventType switch
+        {
+            "thread.started" => "线程启动",
+            "turn.started" => "交互开始",
+            "turn.completed" => "交互完成",
+            "turn.failed" => "交互失败",
+            "item.started" => "节点开始",
+            "item.updated" => "节点更新",
+            "item.completed" => "节点完成",
+            "error" => "错误",
+            _ => eventType
+        };
+    }
+    
+    private string GetOutputEventContainerClass(string eventType)
+    {
+        return eventType switch
+        {
+            "turn.completed" => "bg-emerald-50",
+            "turn.failed" or "error" => "bg-red-50",
+            "item.completed" => "bg-green-50",
+            _ => "bg-white"
+        };
+    }
+
     private async Task Reload()
     {
         await LoadWorkspace();
@@ -692,6 +898,7 @@
         public string? MessagesJson { get; set; }
         public string? WorkspacePath { get; set; }
         public bool IsWorkspaceValid { get; set; }
+        public string? OutputEventsJson { get; set; }
         
         private List<ChatMessage>? _messages;
         public List<ChatMessage>? Messages 
@@ -712,6 +919,43 @@
                 return _messages;
             }
         }
+        
+        private List<OutputEventItem>? _outputEvents;
+        public List<OutputEventItem>? OutputEvents
+        {
+            get
+            {
+                if (_outputEvents == null && !string.IsNullOrEmpty(OutputEventsJson))
+                {
+                    try
+                    {
+                        _outputEvents = System.Text.Json.JsonSerializer.Deserialize<List<OutputEventItem>>(OutputEventsJson);
+                    }
+                    catch
+                    {
+                        _outputEvents = new List<OutputEventItem>();
+                    }
+                }
+                return _outputEvents;
+            }
+        }
+    }
+    
+    private class OutputEventItem
+    {
+        public string Type { get; set; } = string.Empty;
+        public string Title { get; set; } = string.Empty;
+        public string? Content { get; set; }
+        public string? ItemType { get; set; }
+        public bool IsUnknown { get; set; }
+        public OutputEventUsage? Usage { get; set; }
+    }
+    
+    private class OutputEventUsage
+    {
+        public int InputTokens { get; set; }
+        public int CachedInputTokens { get; set; }
+        public int OutputTokens { get; set; }
     }
 
     private class FileNode

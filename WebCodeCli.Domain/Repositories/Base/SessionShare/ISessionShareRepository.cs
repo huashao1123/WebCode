@@ -49,5 +49,5 @@ public interface ISessionShareRepository : IRepository<SessionShare>
     /// 更新分享的会话数据快照
     /// </summary>
     Task<bool> UpdateSnapshotAsync(string shareCode, string? sessionTitle, string? toolId, 
-        string? workspacePath, string? messagesJson, DateTime? sessionUpdatedAt);
+        string? workspacePath, string? messagesJson, DateTime? sessionUpdatedAt, string? outputEventsJson = null);
 }
