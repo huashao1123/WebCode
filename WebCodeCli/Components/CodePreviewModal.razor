@@ -604,14 +604,22 @@
     {
         try
         {
-            await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", _fileContent);
-            _copied = true;
-            StateHasChanged();
+            // 使用项目中已有的 copyToClipboard 辅助函数，它有回退方案
+            var success = await JSRuntime.InvokeAsync<bool>("databaseChatFunctions.copyToClipboard", _fileContent);
+            if (success)
+            {
+                _copied = true;
+                StateHasChanged();
 
-            // 2秒后恢复按钮文本
-            await Task.Delay(2000);
-            _copied = false;
-            StateHasChanged();
+                // 2秒后恢复按钮文本
+                await Task.Delay(2000);
+                _copied = false;
+                StateHasChanged();
+            }
+            else
+            {
+                Console.WriteLine("复制失败：剪贴板操作返回 false");
+            }
         }
         catch (Exception ex)
         {
