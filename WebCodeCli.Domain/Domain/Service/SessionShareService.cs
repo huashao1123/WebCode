@@ -35,23 +35,18 @@ public class SessionShareService : ISessionShareService
     }
     
     /// <summary>
-    /// 创建分享
+    /// 创建分享（包含会话数据）
     /// </summary>
-    public async Task<ShareInfoResponse> CreateShareAsync(
-        string sessionId, 
-        string password, 
-        string? title = null,
-        DateTime? expiresAt = null, 
-        string? createdBy = null)
+    public async Task<ShareInfoResponse> CreateShareAsync(CreateShareRequest request, string? createdBy = null)
     {
-        if (string.IsNullOrWhiteSpace(sessionId))
+        if (string.IsNullOrWhiteSpace(request.SessionId))
         {
-            throw new ArgumentException("会话ID不能为空", nameof(sessionId));
+            throw new ArgumentException("会话ID不能为空");
         }
         
-        if (string.IsNullOrWhiteSpace(password))
+        if (string.IsNullOrWhiteSpace(request.Password))
         {
-            throw new ArgumentException("密码不能为空", nameof(password));
+            throw new ArgumentException("密码不能为空");
         }
         
         // 生成唯一分享码
@@ -59,42 +54,83 @@ public class SessionShareService : ISessionShareService
         
         // 生成密码哈希
         var salt = GenerateSalt();
-        var passwordHash = HashPassword(password, salt);
+        var passwordHash = HashPassword(request.Password, salt);
         
         var share = new SessionShare
         {
-            SessionId = sessionId,
+            SessionId = request.SessionId,
             ShareCode = shareCode,
             PasswordHash = passwordHash,
             PasswordSalt = salt,
-            Title = title,
+            Title = request.Title,
             CreatedBy = createdBy,
             CreatedAt = DateTime.Now,
-            ExpiresAt = expiresAt,
+            ExpiresAt = request.ExpiresAt,
             IsActive = true,
-            ViewCount = 0
+            ViewCount = 0,
+            // 保存会话数据
+            SessionTitle = request.SessionTitle,
+            ToolId = request.ToolId,
+            WorkspacePath = request.WorkspacePath,
+            MessagesJson = request.MessagesJson,
+            SessionCreatedAt = request.SessionCreatedAt,
+            SessionUpdatedAt = request.SessionUpdatedAt
         };
         
         var success = await _repository.InsertAsync(share);
         
         if (!success)
         {
-            _logger.LogError("创建分享失败: SessionId={SessionId}", sessionId);
+            _logger.LogError("创建分享失败: SessionId={SessionId}", request.SessionId);
             throw new InvalidOperationException("创建分享失败");
         }
         
-        _logger.LogInformation("分享创建成功: ShareCode={ShareCode}, SessionId={SessionId}", shareCode, sessionId);
+        _logger.LogInformation("分享创建成功: ShareCode={ShareCode}, SessionId={SessionId}", shareCode, request.SessionId);
         
         return new ShareInfoResponse
         {
             ShareCode = shareCode,
-            SessionId = sessionId,
-            Title = title,
+            SessionId = request.SessionId,
+            Title = request.Title,
             CreatedBy = createdBy,
             CreatedAt = share.CreatedAt,
-            ExpiresAt = expiresAt,
+            ExpiresAt = request.ExpiresAt,
             IsActive = true,
             ViewCount = 0
+        };
+    }
+    
+    /// <summary>
+    /// 获取共享会话数据
+    /// </summary>
+    public async Task<SharedSessionData?> GetSharedSessionDataAsync(string shareCode)
+    {
+        var share = await _repository.GetByShareCodeAsync(shareCode);
+        
+        if (share == null || !share.IsActive)
+        {
+            return null;
+        }
+        
+        if (share.ExpiresAt.HasValue && share.ExpiresAt.Value < DateTime.Now)
+        {
+            return null;
+        }
+        
+        // 检查工作区是否有效
+        var isWorkspaceValid = !string.IsNullOrEmpty(share.WorkspacePath) && 
+                               Directory.Exists(share.WorkspacePath);
+        
+        return new SharedSessionData
+        {
+            SessionId = share.SessionId,
+            Title = share.SessionTitle,
+            ToolId = share.ToolId,
+            WorkspacePath = share.WorkspacePath,
+            MessagesJson = share.MessagesJson,
+            CreatedAt = share.SessionCreatedAt,
+            UpdatedAt = share.SessionUpdatedAt,
+            IsWorkspaceValid = isWorkspaceValid
         };
     }
     

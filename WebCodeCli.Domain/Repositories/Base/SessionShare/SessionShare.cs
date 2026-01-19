@@ -85,6 +85,42 @@ public class SessionShare
     /// </summary>
     [SugarColumn(IsNullable = false)]
     public bool AllowEdit { get; set; } = false;
+    
+    /// <summary>
+    /// 会话标题
+    /// </summary>
+    [SugarColumn(Length = 256, IsNullable = true)]
+    public string? SessionTitle { get; set; }
+    
+    /// <summary>
+    /// 使用的工具ID
+    /// </summary>
+    [SugarColumn(Length = 64, IsNullable = true)]
+    public string? ToolId { get; set; }
+    
+    /// <summary>
+    /// 工作区路径
+    /// </summary>
+    [SugarColumn(Length = 512, IsNullable = true)]
+    public string? WorkspacePath { get; set; }
+    
+    /// <summary>
+    /// 会话消息 (JSON格式)
+    /// </summary>
+    [SugarColumn(ColumnDataType = "TEXT", IsNullable = true)]
+    public string? MessagesJson { get; set; }
+    
+    /// <summary>
+    /// 会话创建时间
+    /// </summary>
+    [SugarColumn(IsNullable = true)]
+    public DateTime? SessionCreatedAt { get; set; }
+    
+    /// <summary>
+    /// 会话更新时间
+    /// </summary>
+    [SugarColumn(IsNullable = true)]
+    public DateTime? SessionUpdatedAt { get; set; }
 }
 
 /// <summary>
@@ -111,6 +147,36 @@ public class CreateShareRequest
     /// 过期时间 (可选)
     /// </summary>
     public DateTime? ExpiresAt { get; set; }
+    
+    /// <summary>
+    /// 会话标题
+    /// </summary>
+    public string? SessionTitle { get; set; }
+    
+    /// <summary>
+    /// 使用的工具ID
+    /// </summary>
+    public string? ToolId { get; set; }
+    
+    /// <summary>
+    /// 工作区路径
+    /// </summary>
+    public string? WorkspacePath { get; set; }
+    
+    /// <summary>
+    /// 会话消息 (JSON格式)
+    /// </summary>
+    public string? MessagesJson { get; set; }
+    
+    /// <summary>
+    /// 会话创建时间
+    /// </summary>
+    public DateTime? SessionCreatedAt { get; set; }
+    
+    /// <summary>
+    /// 会话更新时间
+    /// </summary>
+    public DateTime? SessionUpdatedAt { get; set; }
 }
 
 /// <summary>
@@ -209,4 +275,50 @@ public class ShareValidationResult
     /// 访问令牌 (用于后续请求验证)
     /// </summary>
     public string? AccessToken { get; set; }
+}
+
+/// <summary>
+/// 共享会话数据DTO
+/// </summary>
+public class SharedSessionData
+{
+    /// <summary>
+    /// 会话ID
+    /// </summary>
+    public string SessionId { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// 会话标题
+    /// </summary>
+    public string? Title { get; set; }
+    
+    /// <summary>
+    /// 使用的工具ID
+    /// </summary>
+    public string? ToolId { get; set; }
+    
+    /// <summary>
+    /// 工作区路径
+    /// </summary>
+    public string? WorkspacePath { get; set; }
+    
+    /// <summary>
+    /// 会话消息 (JSON格式)
+    /// </summary>
+    public string? MessagesJson { get; set; }
+    
+    /// <summary>
+    /// 会话创建时间
+    /// </summary>
+    public DateTime? CreatedAt { get; set; }
+    
+    /// <summary>
+    /// 会话更新时间
+    /// </summary>
+    public DateTime? UpdatedAt { get; set; }
+    
+    /// <summary>
+    /// 工作区是否有效
+    /// </summary>
+    public bool IsWorkspaceValid { get; set; }
 }

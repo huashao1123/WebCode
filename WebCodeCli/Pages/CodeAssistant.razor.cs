@@ -3862,7 +3862,22 @@ public partial class CodeAssistant : ComponentBase, IAsyncDisposable
     {
         if (_shareSessionModal != null)
         {
-            await _shareSessionModal.ShowAsync(session.SessionId);
+            // 序列化消息为JSON
+            string? messagesJson = null;
+            if (session.Messages != null && session.Messages.Count > 0)
+            {
+                messagesJson = System.Text.Json.JsonSerializer.Serialize(session.Messages);
+            }
+            
+            await _shareSessionModal.ShowAsync(
+                session.SessionId,
+                session.Title,
+                session.ToolId,
+                session.WorkspacePath,
+                messagesJson,
+                session.CreatedAt,
+                session.UpdatedAt
+            );
         }
     }
     

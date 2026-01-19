@@ -516,11 +516,31 @@
         public string SessionId { get; set; } = string.Empty;
         public string Title { get; set; } = string.Empty;
         public string? ToolId { get; set; }
-        public DateTime CreatedAt { get; set; }
-        public DateTime UpdatedAt { get; set; }
-        public List<ChatMessage>? Messages { get; set; }
+        public DateTime? CreatedAt { get; set; }
+        public DateTime? UpdatedAt { get; set; }
+        public string? MessagesJson { get; set; }
         public string? WorkspacePath { get; set; }
         public bool IsWorkspaceValid { get; set; }
+        
+        private List<ChatMessage>? _messages;
+        public List<ChatMessage>? Messages 
+        { 
+            get 
+            {
+                if (_messages == null && !string.IsNullOrEmpty(MessagesJson))
+                {
+                    try
+                    {
+                        _messages = System.Text.Json.JsonSerializer.Deserialize<List<ChatMessage>>(MessagesJson);
+                    }
+                    catch
+                    {
+                        _messages = new List<ChatMessage>();
+                    }
+                }
+                return _messages;
+            }
+        }
     }
 
     private class FileNode

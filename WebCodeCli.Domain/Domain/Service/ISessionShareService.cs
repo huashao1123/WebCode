@@ -8,20 +8,19 @@ namespace WebCodeCli.Domain.Domain.Service;
 public interface ISessionShareService
 {
     /// <summary>
-    /// 创建分享
+    /// 创建分享（包含会话数据）
     /// </summary>
-    /// <param name="sessionId">会话ID</param>
-    /// <param name="password">分享密码</param>
-    /// <param name="title">分享标题（可选）</param>
-    /// <param name="expiresAt">过期时间（可选）</param>
+    /// <param name="request">创建分享请求</param>
     /// <param name="createdBy">创建者（可选）</param>
     /// <returns>分享信息</returns>
-    Task<ShareInfoResponse> CreateShareAsync(
-        string sessionId, 
-        string password, 
-        string? title = null,
-        DateTime? expiresAt = null, 
-        string? createdBy = null);
+    Task<ShareInfoResponse> CreateShareAsync(CreateShareRequest request, string? createdBy = null);
+    
+    /// <summary>
+    /// 获取共享会话数据
+    /// </summary>
+    /// <param name="shareCode">分享码</param>
+    /// <returns>会话数据</returns>
+    Task<SharedSessionData?> GetSharedSessionDataAsync(string shareCode);
     
     /// <summary>
     /// 验证分享访问

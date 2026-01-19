@@ -12,19 +12,13 @@ namespace WebCodeCli.Controllers;
 public class ShareController : ControllerBase
 {
     private readonly ISessionShareService _shareService;
-    private readonly ISessionHistoryManager _sessionHistoryManager;
-    private readonly ICliExecutorService _cliExecutorService;
     private readonly ILogger<ShareController> _logger;
 
     public ShareController(
         ISessionShareService shareService,
-        ISessionHistoryManager sessionHistoryManager,
-        ICliExecutorService cliExecutorService,
         ILogger<ShareController> logger)
     {
         _shareService = shareService;
-        _sessionHistoryManager = sessionHistoryManager;
-        _cliExecutorService = cliExecutorService;
         _logger = logger;
     }
 
@@ -52,11 +46,8 @@ public class ShareController : ControllerBase
                 return BadRequest(new { error = "密码长度不能少于4位" });
             }
 
-            var result = await _shareService.CreateShareAsync(
-                request.SessionId,
-                request.Password,
-                request.Title,
-                request.ExpiresAt);
+            // 使用新的创建方法，包含会话数据
+            var result = await _shareService.CreateShareAsync(request);
 
             // 生成完整的分享链接
             var baseUrl = $"{Request.Scheme}://{Request.Host}";
@@ -158,17 +149,17 @@ public class ShareController : ControllerBase
                 return Unauthorized(new { error = "缺少访问令牌" });
             }
 
-            var sessionId = await _shareService.GetSessionIdByTokenAsync(shareCode, accessToken);
-
-            if (string.IsNullOrEmpty(sessionId))
+            // 验证访问令牌
+            var isValid = await _shareService.ValidateAccessTokenAsync(shareCode, accessToken);
+            if (!isValid)
             {
                 return Unauthorized(new { error = "访问令牌无效或已过期" });
             }
 
-            // 获取会话信息
-            var session = await _sessionHistoryManager.GetSessionAsync(sessionId);
+            // 从数据库获取共享会话数据
+            var sessionData = await _shareService.GetSharedSessionDataAsync(shareCode);
 
-            if (session == null)
+            if (sessionData == null)
             {
                 return NotFound(new { error = "会话不存在" });
             }
@@ -176,14 +167,14 @@ public class ShareController : ControllerBase
             // 返回会话数据（只读视图）
             return Ok(new
             {
-                session.SessionId,
-                session.Title,
-                session.ToolId,
-                session.CreatedAt,
-                session.UpdatedAt,
-                session.Messages,
-                session.WorkspacePath,
-                session.IsWorkspaceValid
+                sessionData.SessionId,
+                Title = sessionData.Title,
+                sessionData.ToolId,
+                CreatedAt = sessionData.CreatedAt,
+                UpdatedAt = sessionData.UpdatedAt,
+                MessagesJson = sessionData.MessagesJson,
+                sessionData.WorkspacePath,
+                sessionData.IsWorkspaceValid
             });
         }
         catch (Exception ex)
@@ -207,23 +198,28 @@ public class ShareController : ControllerBase
                 return Unauthorized(new { error = "缺少访问令牌" });
             }
 
-            var sessionId = await _shareService.GetSessionIdByTokenAsync(shareCode, accessToken);
-
-            if (string.IsNullOrEmpty(sessionId))
+            // 验证访问令牌
+            var isValid = await _shareService.ValidateAccessTokenAsync(shareCode, accessToken);
+            if (!isValid)
             {
                 return Unauthorized(new { error = "访问令牌无效或已过期" });
             }
 
-            // 获取工作区路径
-            var workspacePath = _cliExecutorService.GetSessionWorkspacePath(sessionId);
+            // 从数据库获取共享会话数据
+            var sessionData = await _shareService.GetSharedSessionDataAsync(shareCode);
 
-            if (!Directory.Exists(workspacePath))
+            if (sessionData == null || string.IsNullOrEmpty(sessionData.WorkspacePath))
+            {
+                return NotFound(new { error = "工作区不存在" });
+            }
+
+            if (!Directory.Exists(sessionData.WorkspacePath))
             {
                 return NotFound(new { error = "工作区不存在" });
             }
 
             // 构建文件树
-            var files = BuildFileTree(workspacePath, workspacePath);
+            var files = BuildFileTree(sessionData.WorkspacePath, sessionData.WorkspacePath);
 
             return Ok(files);
         }
@@ -237,34 +233,59 @@ public class ShareController : ControllerBase
     /// <summary>
     /// 获取共享工作区的文件内容
     /// GET /api/share/{shareCode}/workspace/file/{**filePath}
+    /// 支持通过请求头 X-Share-Token 或查询参数 token 传递访问令牌
     /// </summary>
     [HttpGet("{shareCode}/workspace/file/{**filePath}")]
     public async Task<IActionResult> GetSharedWorkspaceFile(
         string shareCode, 
         string filePath,
-        [FromHeader(Name = "X-Share-Token")] string accessToken)
+        [FromHeader(Name = "X-Share-Token")] string? headerToken,
+        [FromQuery(Name = "token")] string? queryToken)
     {
         try
         {
+            // 优先使用请求头中的令牌，其次使用查询参数
+            var accessToken = headerToken ?? queryToken;
+            
             if (string.IsNullOrWhiteSpace(accessToken))
             {
                 return Unauthorized(new { error = "缺少访问令牌" });
             }
 
-            var sessionId = await _shareService.GetSessionIdByTokenAsync(shareCode, accessToken);
-
-            if (string.IsNullOrEmpty(sessionId))
+            // 验证访问令牌
+            var isValid = await _shareService.ValidateAccessTokenAsync(shareCode, accessToken);
+            if (!isValid)
             {
                 return Unauthorized(new { error = "访问令牌无效或已过期" });
             }
 
-            // 获取文件内容
-            var fileBytes = _cliExecutorService.GetWorkspaceFile(sessionId, filePath);
+            // 从数据库获取共享会话数据
+            var sessionData = await _shareService.GetSharedSessionDataAsync(shareCode);
 
-            if (fileBytes == null)
+            if (sessionData == null || string.IsNullOrEmpty(sessionData.WorkspacePath))
+            {
+                return NotFound(new { error = "工作区不存在" });
+            }
+
+            // 组合完整路径
+            var fullPath = Path.Combine(sessionData.WorkspacePath, filePath);
+
+            // 安全检查：确保文件在工作区内
+            var normalizedWorkspace = Path.GetFullPath(sessionData.WorkspacePath);
+            var normalizedFile = Path.GetFullPath(fullPath);
+
+            if (!normalizedFile.StartsWith(normalizedWorkspace, StringComparison.OrdinalIgnoreCase))
+            {
+                return BadRequest(new { error = "无效的文件路径" });
+            }
+
+            if (!System.IO.File.Exists(fullPath))
             {
                 return NotFound(new { error = "文件不存在" });
             }
+
+            // 读取文件内容
+            var fileBytes = await System.IO.File.ReadAllBytesAsync(fullPath);
 
             // 确定 Content-Type
             var contentType = GetContentType(filePath);

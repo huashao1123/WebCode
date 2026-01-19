@@ -300,10 +300,27 @@
     // 管理分享
     private List<ShareInfoResponse> _existingShares = new();
     private bool _isLoadingShares = false;
+    
+    // 会话数据 (从父组件传入)
+    private string? _sessionTitle;
+    private string? _toolId;
+    private string? _workspacePath;
+    private string? _messagesJson;
+    private DateTime? _sessionCreatedAt;
+    private DateTime? _sessionUpdatedAt;
 
-    public async Task ShowAsync(string sessionId)
+    public async Task ShowAsync(string sessionId, string? sessionTitle = null, string? toolId = null, 
+        string? workspacePath = null, string? messagesJson = null, 
+        DateTime? sessionCreatedAt = null, DateTime? sessionUpdatedAt = null)
     {
         SessionId = sessionId;
+        _sessionTitle = sessionTitle;
+        _toolId = toolId;
+        _workspacePath = workspacePath;
+        _messagesJson = messagesJson;
+        _sessionCreatedAt = sessionCreatedAt;
+        _sessionUpdatedAt = sessionUpdatedAt;
+        
         _isVisible = true;
         _activeTab = "create";
         ResetForm();
@@ -364,7 +381,14 @@
                 SessionId = SessionId,
                 Password = _inputPassword,
                 Title = string.IsNullOrWhiteSpace(_inputTitle) ? null : _inputTitle,
-                ExpiresAt = expiresAt
+                ExpiresAt = expiresAt,
+                // 包含会话数据
+                SessionTitle = _sessionTitle,
+                ToolId = _toolId,
+                WorkspacePath = _workspacePath,
+                MessagesJson = _messagesJson,
+                SessionCreatedAt = _sessionCreatedAt,
+                SessionUpdatedAt = _sessionUpdatedAt
             };
 
             var response = await Http.PostAsJsonAsync("/api/share", request);
