@@ -181,6 +181,9 @@ public partial class CodeAssistant : ComponentBase, IAsyncDisposable
     
     // 移动端预览区折叠状态
     private bool _isPreviewCollapsed = false;
+
+    // 设备类型检测（用于PC/移动端路由跳转）
+    private bool _hasCheckedDevice = false;
     
     // 删除确认对话框（工作区文件）
     private bool _showDeleteConfirmDialog = false;
@@ -329,6 +332,24 @@ public partial class CodeAssistant : ComponentBase, IAsyncDisposable
     {
         if (firstRender)
         {
+            if (!_hasCheckedDevice)
+            {
+                _hasCheckedDevice = true;
+                try
+                {
+                    var isMobile = await JSRuntime.InvokeAsync<bool>("isMobileDevice");
+                    if (isMobile)
+                    {
+                        NavigationManager.NavigateTo("/m/code-assistant", true);
+                        return;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"设备类型检测失败: {ex.Message}");
+                }
+            }
+
             try
             {
                 // 首次渲染后确保本地化资源已加载（避免 JS 互操作时机问题）

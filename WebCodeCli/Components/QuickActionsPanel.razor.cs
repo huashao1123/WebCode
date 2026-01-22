@@ -12,6 +12,7 @@ public partial class QuickActionsPanel : ComponentBase
     [Inject] private ILocalizationService L { get; set; } = default!;
 
     [Parameter] public EventCallback<string> OnActionSelected { get; set; }
+    [Parameter] public bool DefaultCollapsed { get; set; } = true;
 
     private List<QuickAction> _actions = new();
     private bool _isLoading = true;
@@ -35,6 +36,7 @@ public partial class QuickActionsPanel : ComponentBase
 
     protected override async Task OnInitializedAsync()
     {
+        _isCollapsed = DefaultCollapsed;
         await LoadTranslationsAsync();
         await LoadActionsAsync();
     }

@@ -30,7 +30,11 @@
     "paste": "Paste",
     "cut": "Cut",
     "selectAll": "Select All",
-    "clear": "Clear"
+    "clear": "Clear",
+    "justNow": "Just now",
+    "minutesAgo": "minutes ago",
+    "hoursAgo": "hours ago",
+    "daysAgo": "days ago"
   },
   "quickActions": {
     "title": "Quick Actions",
@@ -197,6 +201,7 @@
     "createSessionHint": "Click the button above to create a new session",
     "selectTool": "Select Tool",
     "envConfig": "Configure Environment",
+    "envConfigDesc": "Manage environment variables required for tools",
     "contextManagement": "Context",
     "language": "Language",
     "expandPreview": "Expand Preview",
@@ -231,6 +236,7 @@
     "fileDeleteWarning": "The file will be permanently deleted",
     "renameSession": "Rename Session",
     "deleteSession": "Delete Session",
+    "deleteSessionWarning": "Are you sure you want to delete this session? This action cannot be undone.",
     "sessionName": "Session Name",
     "today": "Today",
     "yesterday": "Yesterday",
@@ -292,7 +298,28 @@
     "includesCurrentSession": "Includes the current active session",
     "currentSessionDeleteNote": "A new session will be created or switched to after deletion.",
     "batchDeleteWarning": "Warning: This action will permanently delete all selected sessions and their messages, and cannot be undone!",
-    "confirmBatchDelete": "Delete ({count})"
+    "confirmBatchDelete": "Delete ({count})",
+    "chat": "Chat",
+    "output": "Output",
+    "files": "Files",
+    "rootFolder": "Root",
+    "emptyFolder": "This folder is empty",
+    "goToFiles": "Go to Files",
+    "downloadAll": "Download All",
+    "downloadAllDesc": "Download all workspace files as a zip",
+    "errorOccurred": "Error occurred",
+    "quickActions": "Quick Actions",
+    "quickAction": {
+      "generate": "Generate Code",
+      "explain": "Explain Code",
+      "optimize": "Optimize Code",
+      "debug": "Debug Help",
+      "test": "Generate Tests",
+      "docs": "Generate Docs",
+      "refactor": "Refactor Code",
+      "review": "Code Review"
+    },
+    "helpWith": "Please help me with {action}: "
   },
   "envConfig": {
     "title": "Environment Variables",

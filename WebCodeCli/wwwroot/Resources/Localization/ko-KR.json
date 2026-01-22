@@ -30,7 +30,11 @@
     "paste": "붙여넣기",
     "cut": "잘라내기",
     "selectAll": "전체 선택",
-    "clear": "지우기"
+    "clear": "지우기",
+    "justNow": "방금",
+    "minutesAgo": "분 전",
+    "hoursAgo": "시간 전",
+    "daysAgo": "일 전"
   },
   "contextPreview": {
     "title": "컨텍스트 미리보기",
@@ -244,6 +248,7 @@
     "createSessionHint": "위 버튼을 클릭하여 새 세션을 만드세요",
     "selectTool": "도구 선택",
     "envConfig": "환경 설정",
+    "envConfigDesc": "도구에 필요한 환경 변수 관리",
     "contextManagement": "컨텍스트 관리",
     "language": "언어",
     "expandPreview": "미리보기 펼치기",
@@ -278,6 +283,7 @@
     "fileDeleteWarning": "파일이 영구적으로 삭제됩니다",
     "renameSession": "세션 이름 변경",
     "deleteSession": "세션 삭제",
+    "deleteSessionWarning": "이 세션을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.",
     "sessionName": "세션 이름",
     "today": "오늘",
     "yesterday": "어제",
@@ -339,7 +345,28 @@
     "includesCurrentSession": "현재 활성 세션이 포함되어 있습니다",
     "currentSessionDeleteNote": "삭제 후 다른 세션으로 전환되거나 새 세션이 생성됩니다.",
     "batchDeleteWarning": "경고: 이 작업은 선택한 모든 세션과 메시지를 영구적으로 삭제하며, 되돌릴 수 없습니다!",
-    "confirmBatchDelete": "삭제 확인 ({count})"
+    "confirmBatchDelete": "삭제 확인 ({count})",
+    "chat": "채팅",
+    "output": "출력",
+    "files": "파일",
+    "rootFolder": "루트",
+    "emptyFolder": "이 폴더는 비어 있습니다",
+    "goToFiles": "파일 보기",
+    "downloadAll": "모두 다운로드",
+    "downloadAllDesc": "작업 공간의 모든 파일을 ZIP으로 다운로드",
+    "errorOccurred": "오류가 발생했습니다",
+    "quickActions": "빠른 작업",
+    "quickAction": {
+      "generate": "코드 생성",
+      "explain": "코드 설명",
+      "optimize": "코드 최적화",
+      "debug": "디버그 도움",
+      "test": "테스트 생성",
+      "docs": "문서 생성",
+      "refactor": "리팩토링",
+      "review": "코드 리뷰"
+    },
+    "helpWith": "{action}을(를) 도와주세요: "
   },
   "envConfig": {
     "title": "환경 변수 설정",

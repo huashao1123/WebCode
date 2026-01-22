@@ -30,7 +30,11 @@
     "paste": "貼り付け",
     "cut": "切り取り",
     "selectAll": "すべて選択",
-    "clear": "クリア"
+    "clear": "クリア",
+    "justNow": "たった今",
+    "minutesAgo": "分前",
+    "hoursAgo": "時間前",
+    "daysAgo": "日前"
   },
   "contextPreview": {
     "title": "コンテキストプレビュー",
@@ -244,6 +248,7 @@
     "createSessionHint": "上のボタンをクリックして新しいセッションを作成",
     "selectTool": "ツールを選択",
     "envConfig": "環境設定",
+    "envConfigDesc": "ツールに必要な環境変数を管理する",
     "contextManagement": "コンテキスト管理",
     "language": "言語",
     "expandPreview": "プレビューを展開",
@@ -278,6 +283,7 @@
     "fileDeleteWarning": "ファイルは永久に削除されます",
     "renameSession": "セッション名を変更",
     "deleteSession": "セッションを削除",
+    "deleteSessionWarning": "このセッションを削除してもよろしいですか？この操作は元に戻せません。",
     "sessionName": "セッション名",
     "today": "今日",
     "yesterday": "昨日",
@@ -339,7 +345,28 @@
     "includesCurrentSession": "現在アクティブなセッションが含まれています",
     "currentSessionDeleteNote": "削除後、他のセッションに切り替えるか、新しいセッションが作成されます。",
     "batchDeleteWarning": "警告：この操作は選択したすべてのセッションとメッセージを完全に削除し、元に戻すことはできません！",
-    "confirmBatchDelete": "削除を確認 ({count})"
+    "confirmBatchDelete": "削除を確認 ({count})",
+    "chat": "チャット",
+    "output": "出力",
+    "files": "ファイル",
+    "rootFolder": "ルート",
+    "emptyFolder": "このフォルダーは空です",
+    "goToFiles": "ファイルを見る",
+    "downloadAll": "すべてダウンロード",
+    "downloadAllDesc": "ワークスペースのすべてのファイルをZIPでダウンロード",
+    "errorOccurred": "エラーが発生しました",
+    "quickActions": "クイックアクション",
+    "quickAction": {
+      "generate": "コード生成",
+      "explain": "コード解説",
+      "optimize": "コード最適化",
+      "debug": "デバッグ支援",
+      "test": "テスト生成",
+      "docs": "ドキュメント生成",
+      "refactor": "リファクタリング",
+      "review": "コードレビュー"
+    },
+    "helpWith": "{action}をお願いします: "
   },
   "envConfig": {
     "title": "環境変数を設定",

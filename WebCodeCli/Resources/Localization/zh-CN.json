@@ -30,7 +30,11 @@
     "paste": "粘贴",
     "cut": "剪切",
     "selectAll": "全选",
-    "clear": "清空"
+    "clear": "清空",
+    "justNow": "刚刚",
+    "minutesAgo": "分钟前",
+    "hoursAgo": "小时前",
+    "daysAgo": "天前"
   },
   "quickActions": {
     "title": "快捷操作",
@@ -197,6 +201,7 @@
     "createSessionHint": "点击上方按钮创建新会话",
     "selectTool": "选择工具",
     "envConfig": "配置环境变量",
+    "envConfigDesc": "管理工具运行所需的环境变量",
     "contextManagement": "上下文",
     "language": "语言",
     "expandPreview": "展开预览",
@@ -231,6 +236,7 @@
     "fileDeleteWarning": "文件将被永久删除",
     "renameSession": "重命名会话",
     "deleteSession": "删除会话",
+    "deleteSessionWarning": "确定要删除此会话吗？此操作无法撤销。",
     "sessionName": "会话名称",
     "today": "今天",
     "yesterday": "昨天",
@@ -292,7 +298,28 @@
     "includesCurrentSession": "包含当前激活的会话",
     "currentSessionDeleteNote": "删除后将自动切换到其他会话或创建新会话。",
     "batchDeleteWarning": "警告：此操作将永久删除所有选中的会话及其消息，且无法恢复！",
-    "confirmBatchDelete": "确认删除 ({count})"
+    "confirmBatchDelete": "确认删除 ({count})",
+    "chat": "对话",
+    "output": "输出",
+    "files": "文件",
+    "rootFolder": "根目录",
+    "emptyFolder": "此文件夹为空",
+    "goToFiles": "查看文件",
+    "downloadAll": "下载全部",
+    "downloadAllDesc": "将工作区所有文件打包下载",
+    "errorOccurred": "发生错误",
+    "quickActions": "快捷操作",
+    "quickAction": {
+      "generate": "生成代码",
+      "explain": "解释代码",
+      "optimize": "优化代码",
+      "debug": "调试帮助",
+      "test": "生成测试",
+      "docs": "生成文档",
+      "refactor": "重构代码",
+      "review": "代码审查"
+    },
+    "helpWith": "请帮我{action}: "
   },
   "envConfig": {
     "title": "配置环境变量",

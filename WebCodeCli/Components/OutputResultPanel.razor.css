@@ -1,0 +1,28 @@
+.markdown-preview {
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    max-width: 100%;
+}
+
+.markdown-preview * {
+    max-width: 100%;
+}
+
+.markdown-preview pre {
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    max-width: 100%;
+}
+
+.markdown-preview code {
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+}
+
+.markdown-preview table {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+}

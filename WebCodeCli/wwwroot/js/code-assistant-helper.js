@@ -30,6 +30,20 @@ window.scrollToBottom = function(containerId) {
     });
 };
 
+// 判断是否为移动端设备
+window.isMobileDevice = function() {
+    try {
+        const ua = (navigator.userAgent || '').toLowerCase();
+        const isMobileUa = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini|mobile|tablet/.test(ua);
+        const maxTouchPoints = navigator.maxTouchPoints || 0;
+        const isTouch = maxTouchPoints > 1;
+        const isSmallScreen = Math.min(screen.width || 0, screen.height || 0) <= 820;
+        return isMobileUa || (isTouch && isSmallScreen);
+    } catch (e) {
+        return false;
+    }
+};
+
 // 获取滚动容器信息（用于向上加载更多时保持滚动位置）
 window.getScrollInfo = function(containerId) {
     const container = document.getElementById(containerId);
