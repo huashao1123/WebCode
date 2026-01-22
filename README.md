@@ -115,6 +115,14 @@ WebCode 针对移动设备进行了全面优化：
 - ✅ Android 手机（各尺寸）
 - ✅ Chrome / Safari / Firefox / Edge 移动版
 
+## 🧭 首次安装设置向导
+
+首次安装会进入设置界面（/setup），按步骤完成初始化配置：
+
+![设置向导 - 第一步](images/setup1.png)
+![设置向导 - 第二步](images/setup2.png)
+![设置向导 - 第三步](images/setup3.png)
+
 ## 🖼️ 产品截图
 
 > 以下截图来自项目内置演示素材，实际界面以当前版本为准。

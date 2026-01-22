@@ -115,6 +115,14 @@ WebCodeCli is fully optimized for mobile devices:
 - ✅ Android phones (various sizes)
 - ✅ Chrome / Safari / Firefox / Edge mobile versions
 
+## 🧭 First-Run Setup Wizard
+
+On first install, you will be guided through the setup page (/setup) to complete initialization:
+
+![Setup wizard - Step 1](images/setup1.png)
+![Setup wizard - Step 2](images/setup2.png)
+![Setup wizard - Step 3](images/setup3.png)
+
 ## 🖼️ Screenshots
 
 > These images are demo assets included in the repo; the actual UI may vary by version.
