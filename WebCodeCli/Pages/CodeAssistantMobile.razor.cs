@@ -64,6 +64,7 @@ public partial class CodeAssistantMobile : ComponentBase, IAsyncDisposable
     
     private Dictionary<string, string> _translations = new();
     private string _currentLanguage = "zh-CN";
+    private List<WebCodeCli.Domain.Domain.Service.LanguageInfo> _supportedLanguages = new();
     
     private string T(string key, params (string key, string value)[] args)
     {
@@ -140,6 +141,26 @@ public partial class CodeAssistantMobile : ComponentBase, IAsyncDisposable
         InitializeTabs();
         InitializeQuickActions();
         StateHasChanged();
+    }
+    
+    /// <summary>
+    /// 移动端语言下拉框变化事件
+    /// </summary>
+    private async Task OnMobileLanguageChanged()
+    {
+        try
+        {
+            await L.SetCurrentLanguageAsync(_currentLanguage);
+            await L.ReloadTranslationsAsync();
+            await LoadTranslationsAsync();
+            InitializeTabs();
+            InitializeQuickActions();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"切换语言失败: {ex.Message}");
+        }
     }
     
     #endregion
@@ -554,15 +575,19 @@ public partial class CodeAssistantMobile : ComponentBase, IAsyncDisposable
                 var root = jsonDoc.RootElement;
                 
                 var eventType = root.TryGetProperty("type", out var typeProp) ? typeProp.GetString() ?? "" : "";
-                var eventContent = root.TryGetProperty("content", out var contentProp) ? contentProp.GetString() ?? "" : "";
                 var itemType = root.TryGetProperty("item_type", out var itemTypeProp) ? itemTypeProp.GetString() : null;
                 
-                if (!string.IsNullOrEmpty(eventType))
+                // 根据事件类型提取内容
+                var eventContent = ExtractEventContent(root, eventType);
+                var eventTitle = GetEventTitle(eventType, itemType);
+                
+                // 只处理有意义的事件（忽略 system init 等）
+                if (!string.IsNullOrEmpty(eventType) && ShouldDisplayEvent(eventType, eventContent))
                 {
                     OnJsonlEvent(new JsonlDisplayItem
                     {
                         Type = eventType,
-                        Title = eventType,
+                        Title = eventTitle,
                         Content = eventContent,
                         ItemType = itemType
                     });
@@ -573,6 +598,150 @@ public partial class CodeAssistantMobile : ComponentBase, IAsyncDisposable
                 // 不是有效的JSON，忽略
             }
         }
+    }
+    
+    /// <summary>
+    /// 根据事件类型提取内容
+    /// </summary>
+    private string ExtractEventContent(JsonElement root, string eventType)
+    {
+        try
+        {
+            switch (eventType)
+            {
+                case "assistant":
+                    // 助手消息: message.content[0].text
+                    if (root.TryGetProperty("message", out var messageElement) &&
+                        messageElement.TryGetProperty("content", out var contentArray) &&
+                        contentArray.ValueKind == JsonValueKind.Array)
+                    {
+                        var textParts = new List<string>();
+                        foreach (var item in contentArray.EnumerateArray())
+                        {
+                            if (item.TryGetProperty("type", out var typeEl) && 
+                                typeEl.GetString() == "text" &&
+                                item.TryGetProperty("text", out var textEl))
+                            {
+                                textParts.Add(textEl.GetString() ?? "");
+                            }
+                        }
+                        return string.Join("\n", textParts);
+                    }
+                    break;
+                    
+                case "result":
+                    // 执行结果: result 字段
+                    if (root.TryGetProperty("result", out var resultElement))
+                    {
+                        return resultElement.GetString() ?? "";
+                    }
+                    break;
+                    
+                case "tool_use":
+                    // 工具调用：显示工具名称和输入
+                    var sb = new StringBuilder();
+                    if (root.TryGetProperty("name", out var nameElement))
+                    {
+                        sb.AppendLine($"工具: {nameElement.GetString()}");
+                    }
+                    if (root.TryGetProperty("input", out var inputElement))
+                    {
+                        var inputStr = inputElement.ValueKind == JsonValueKind.String 
+                            ? inputElement.GetString() 
+                            : inputElement.GetRawText();
+                        if (!string.IsNullOrEmpty(inputStr) && inputStr.Length < 500)
+                        {
+                            sb.AppendLine($"输入: {inputStr}");
+                        }
+                    }
+                    return sb.ToString().TrimEnd();
+                    
+                case "tool_result":
+                    // 工具结果
+                    if (root.TryGetProperty("content", out var toolContent))
+                    {
+                        var contentStr = toolContent.ValueKind == JsonValueKind.String 
+                            ? toolContent.GetString() 
+                            : toolContent.GetRawText();
+                        if (!string.IsNullOrEmpty(contentStr) && contentStr.Length < 1000)
+                        {
+                            return contentStr;
+                        }
+                        return "[结果内容过长...]";
+                    }
+                    break;
+                    
+                case "error":
+                    // 错误消息
+                    if (root.TryGetProperty("message", out var errMsgElement))
+                    {
+                        return errMsgElement.GetString() ?? "发生错误";
+                    }
+                    break;
+            }
+            
+            // 默认尝试获取 content 字段
+            if (root.TryGetProperty("content", out var defaultContent))
+            {
+                if (defaultContent.ValueKind == JsonValueKind.String)
+                {
+                    return defaultContent.GetString() ?? "";
+                }
+            }
+            
+            return "";
+        }
+        catch
+        {
+            return "";
+        }
+    }
+    
+    /// <summary>
+    /// 获取事件标题
+    /// </summary>
+    private string GetEventTitle(string eventType, string? itemType)
+    {
+        return eventType switch
+        {
+            "assistant" => T("cliEvent.badge.reply"),
+            "result" => T("cliEvent.badge.result"),
+            "tool_use" => T("cliEvent.badge.toolUse"),
+            "tool_result" => T("cliEvent.badge.toolResult"),
+            "error" => T("cliEvent.badge.error"),
+            "system" => T("cliEvent.badge.system"),
+            "user" => T("cliEvent.badge.input"),
+            _ => eventType
+        };
+    }
+    
+    /// <summary>
+    /// 判断事件是否应该显示
+    /// </summary>
+    private bool ShouldDisplayEvent(string eventType, string content)
+    {
+        // 忽略系统初始化事件
+        if (eventType == "system") return false;
+        
+        // 只显示有内容的事件
+        if (eventType == "assistant" || eventType == "result")
+        {
+            return !string.IsNullOrWhiteSpace(content);
+        }
+        
+        // 工具调用和结果始终显示
+        if (eventType == "tool_use" || eventType == "tool_result")
+        {
+            return true;
+        }
+        
+        // 错误始终显示
+        if (eventType == "error")
+        {
+            return true;
+        }
+        
+        return !string.IsNullOrWhiteSpace(content);
     }
     
     private void OnJsonlEvent(JsonlDisplayItem item)
@@ -1431,6 +1600,7 @@ public partial class CodeAssistantMobile : ComponentBase, IAsyncDisposable
         // 初始化本地化
         try
         {
+            _supportedLanguages = L.GetSupportedLanguages();
             _currentLanguage = await L.GetCurrentLanguageAsync();
             await LoadTranslationsAsync();
         }
