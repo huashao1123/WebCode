@@ -183,7 +183,7 @@
 
 ## 技术架构
 
-- **前端**: Blazor Server + Ant Design Blazor
+- **前端**: Blazor Server 
 - **后端**: ASP.NET Core 9.0
 - **代码编辑器**: Monaco Editor
 - **Markdown 解析**: Markdig

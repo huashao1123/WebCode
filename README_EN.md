@@ -232,7 +232,6 @@ WebCodeCli/
 | Category | Technology |
 |----------|------------|
 | **Frontend Framework** | Blazor Server + Tailwind CSS |
-| **UI Component Library** | Ant Design Blazor |
 | **Code Editor** | Monaco Editor |
 | **AI Features** | Microsoft Semantic Kernel |
 | **Data Access** | SqlSugar ORM (Sqlite/PostgreSQL) |

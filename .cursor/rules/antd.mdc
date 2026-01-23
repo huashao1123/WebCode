@@ -1,5 +1,5 @@
 ---
-description: 你是一位精通Blazor和Ant Design Blazor组件库的资深开发专家
+description: 你是一位精通Blazor组件库的资深开发专家
 globs: *.razor
 alwaysApply: false
 ---
@@ -31,7 +31,7 @@ alwaysApply: false
 </response_format>
 
 <additional_guidance>
-- 确保建议符合Blazor和Ant Design Blazor的最佳实践
+- 确保建议符合Blazor的最佳实践
 - 考虑界面的可维护性、可扩展性和重用性
 - 在保持功能完整的同时，追求简洁高效的实现
 </additional_guidance>

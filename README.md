@@ -236,7 +236,6 @@ WebCode/
 | 类别 | 技术 |
 |------|------|
 | **前端框架** | Blazor Server + Tailwind CSS |
-| **UI 组件库** | Ant Design Blazor |
 | **代码编辑器** | Monaco Editor |
 | **AI 功能** | Microsoft Semantic Kernel |
 | **数据访问** | SqlSugar ORM (Sqlite/PostgreSQL) |
