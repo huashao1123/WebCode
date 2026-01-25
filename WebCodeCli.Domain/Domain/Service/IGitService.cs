@@ -36,4 +36,47 @@ public interface IGitService
     /// 获取所有提交历史
     /// </summary>
     Task<List<GitCommit>> GetAllCommitsAsync(string workspacePath, int maxCount = 100);
+    
+    /// <summary>
+    /// 克隆远程仓库
+    /// </summary>
+    /// <param name="gitUrl">Git 仓库地址</param>
+    /// <param name="localPath">本地目标路径</param>
+    /// <param name="branch">分支名称</param>
+    /// <param name="credentials">认证凭据</param>
+    /// <param name="progress">进度回调</param>
+    /// <returns>是否成功</returns>
+    Task<(bool Success, string? ErrorMessage)> CloneAsync(
+        string gitUrl, 
+        string localPath, 
+        string branch, 
+        GitCredentials? credentials = null,
+        Action<CloneProgress>? progress = null);
+    
+    /// <summary>
+    /// 拉取远程更新
+    /// </summary>
+    /// <param name="localPath">本地仓库路径</param>
+    /// <param name="credentials">认证凭据</param>
+    /// <returns>是否成功</returns>
+    Task<(bool Success, string? ErrorMessage)> PullAsync(
+        string localPath, 
+        GitCredentials? credentials = null);
+    
+    /// <summary>
+    /// 获取远程仓库的分支列表
+    /// </summary>
+    /// <param name="gitUrl">Git 仓库地址</param>
+    /// <param name="credentials">认证凭据</param>
+    /// <returns>分支名称列表</returns>
+    Task<(List<string> Branches, string? ErrorMessage)> ListRemoteBranchesAsync(
+        string gitUrl, 
+        GitCredentials? credentials = null);
+    
+    /// <summary>
+    /// 获取本地仓库的当前分支
+    /// </summary>
+    /// <param name="localPath">本地仓库路径</param>
+    /// <returns>当前分支名称</returns>
+    string? GetCurrentBranch(string localPath);
 }

@@ -55,4 +55,10 @@ public class ChatSessionEntity
     /// </summary>
     [SugarColumn(IsNullable = false)]
     public bool IsWorkspaceValid { get; set; } = true;
+    
+    /// <summary>
+    /// 关联的项目ID（可选）
+    /// </summary>
+    [SugarColumn(Length = 64, IsNullable = true)]
+    public string? ProjectId { get; set; }
 }

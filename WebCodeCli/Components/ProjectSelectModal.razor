@@ -1,0 +1,174 @@
+@namespace WebCodeCli.Components
+@using WebCodeCli.Domain.Domain.Model
+@inject HttpClient Http
+
+<!-- 项目选择模态框 -->
+@if (_isVisible)
+{
+    <div class="fixed inset-0 z-50 overflow-y-auto">
+        <!-- 背景遮罩 -->
+        <div class="fixed inset-0 bg-black bg-opacity-50 transition-opacity" @onclick="Cancel"></div>
+
+        <!-- 模态框内容 -->
+        <div class="flex min-h-full items-center justify-center p-4">
+            <div class="relative bg-white rounded-2xl shadow-xl w-full max-w-md transform transition-all" @onclick:stopPropagation="true">
+                <!-- 头部 -->
+                <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                    <h3 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
+                        </svg>
+                        选择项目
+                    </h3>
+                    <button @onclick="Cancel" class="p-1 hover:bg-gray-100 rounded-lg transition-colors">
+                        <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- 内容 -->
+                <div class="p-6">
+                    <p class="text-sm text-gray-600 mb-4">
+                        选择一个项目来初始化新会话的工作区，或者选择"空白会话"从头开始。
+                    </p>
+                    
+                    @if (_isLoading)
+                    {
+                        <div class="py-8 text-center">
+                            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+                            <p class="mt-2 text-gray-500">加载中...</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="space-y-2 max-h-80 overflow-y-auto">
+                            <!-- 空白会话选项 -->
+                            <button @onclick="() => SelectProject(null)"
+                                    class="w-full p-4 border-2 rounded-lg text-left transition-all hover:border-gray-400 @(_selectedProjectId == null ? "border-gray-900 bg-gray-50" : "border-gray-200")">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                                        <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-medium text-gray-800">空白会话</h4>
+                                        <p class="text-xs text-gray-500">不使用任何项目，从空白工作区开始</p>
+                                    </div>
+                                </div>
+                            </button>
+                            
+                            <!-- 项目列表 -->
+                            @foreach (var project in _projects.Where(p => p.Status == "ready"))
+                            {
+                                <button @onclick="() => SelectProject(project.ProjectId)"
+                                        class="w-full p-4 border-2 rounded-lg text-left transition-all hover:border-gray-400 @(_selectedProjectId == project.ProjectId ? "border-gray-900 bg-gray-50" : "border-gray-200")">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                                            <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
+                                            </svg>
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <h4 class="font-medium text-gray-800 truncate">@project.Name</h4>
+                                            <p class="text-xs text-gray-500 truncate">@project.GitUrl</p>
+                                            <p class="text-xs text-gray-400">分支: @project.Branch</p>
+                                        </div>
+                                    </div>
+                                </button>
+                            }
+                            
+                            @if (!_projects.Any(p => p.Status == "ready"))
+                            {
+                                <div class="py-4 text-center text-gray-400 text-sm">
+                                    <p>没有可用的项目</p>
+                                    <p class="text-xs mt-1">请先在项目管理中创建并克隆项目</p>
+                                </div>
+                            }
+                        </div>
+                        
+                        <!-- 操作按钮 -->
+                        <div class="flex gap-3 mt-6">
+                            <button @onclick="Cancel"
+                                    class="flex-1 py-3 border border-gray-300 rounded-lg font-medium hover:bg-gray-50 transition-colors">
+                                取消
+                            </button>
+                            <button @onclick="Confirm"
+                                    class="flex-1 py-3 bg-gray-900 text-white rounded-lg font-medium hover:bg-gray-800 transition-colors">
+                                确认
+                            </button>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public EventCallback<string?> OnProjectSelected { get; set; }
+
+    private bool _isVisible = false;
+    private List<ProjectInfo> _projects = new();
+    private bool _isLoading = false;
+    private string? _selectedProjectId = null;
+
+    public async Task ShowAsync()
+    {
+        _isVisible = true;
+        _selectedProjectId = null;
+        StateHasChanged();
+        
+        await LoadProjects();
+    }
+
+    public void Close()
+    {
+        _isVisible = false;
+        StateHasChanged();
+    }
+
+    private async Task LoadProjects()
+    {
+        try
+        {
+            _isLoading = true;
+            StateHasChanged();
+
+            var response = await Http.GetAsync("/api/project");
+            
+            if (response.IsSuccessStatusCode)
+            {
+                _projects = await response.Content.ReadFromJsonAsync<List<ProjectInfo>>() ?? new();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"加载项目列表失败: {ex.Message}");
+        }
+        finally
+        {
+            _isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void SelectProject(string? projectId)
+    {
+        _selectedProjectId = projectId;
+        StateHasChanged();
+    }
+
+    private async Task Confirm()
+    {
+        Close();
+        await OnProjectSelected.InvokeAsync(_selectedProjectId);
+    }
+
+    private void Cancel()
+    {
+        Close();
+    }
+}

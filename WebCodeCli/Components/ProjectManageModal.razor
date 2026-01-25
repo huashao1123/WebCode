@@ -1,0 +1,659 @@
+@namespace WebCodeCli.Components
+@using WebCodeCli.Domain.Domain.Model
+@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+
+<!-- 项目管理模态框 -->
+@if (_isVisible)
+{
+    <div class="fixed inset-0 z-50 overflow-y-auto">
+        <!-- 背景遮罩 -->
+        <div class="fixed inset-0 bg-black bg-opacity-50 transition-opacity" @onclick="Close"></div>
+
+        <!-- 模态框内容 -->
+        <div class="flex min-h-full items-center justify-center p-4">
+            <div class="relative bg-white rounded-2xl shadow-xl w-full max-w-2xl transform transition-all" @onclick:stopPropagation="true">
+                <!-- 头部 -->
+                <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                    <h3 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
+                        </svg>
+                        项目管理
+                    </h3>
+                    <button @onclick="Close" class="p-1 hover:bg-gray-100 rounded-lg transition-colors">
+                        <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- 内容 -->
+                <div class="p-6">
+                    <!-- Tab 切换 -->
+                    <div class="flex border-b border-gray-200 mb-4">
+                        <button @onclick='() => _activeTab = "list"'
+                                class="px-4 py-2 text-sm font-medium @(_activeTab == "list" ? "text-gray-900 border-b-2 border-gray-900 -mb-px" : "text-gray-500 hover:text-gray-700")">
+                            项目列表 (@_projects.Count)
+                        </button>
+                        <button @onclick='() => _activeTab = "create"'
+                                class="px-4 py-2 text-sm font-medium @(_activeTab == "create" ? "text-gray-900 border-b-2 border-gray-900 -mb-px" : "text-gray-500 hover:text-gray-700")">
+                            创建项目
+                        </button>
+                    </div>
+
+                    @if (_activeTab == "list")
+                    {
+                        <!-- 项目列表 -->
+                        @if (_isLoadingProjects)
+                        {
+                            <div class="py-8 text-center">
+                                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+                                <p class="mt-2 text-gray-500">加载中...</p>
+                            </div>
+                        }
+                        else if (_projects.Count == 0)
+                        {
+                            <div class="py-8 text-center text-gray-500">
+                                <svg class="w-12 h-12 mx-auto text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
+                                </svg>
+                                <p>暂无项目</p>
+                                <button @onclick='() => _activeTab = "create"' class="mt-2 text-gray-700 hover:underline text-sm">
+                                    创建第一个项目
+                                </button>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="space-y-3 max-h-96 overflow-y-auto">
+                                @foreach (var project in _projects)
+                                {
+                                    <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                                        <div class="flex items-start justify-between">
+                                            <div class="flex-1 min-w-0">
+                                                <div class="flex items-center gap-2 mb-1">
+                                                    <!-- 状态标签 -->
+                                                    @if (project.Status == "ready")
+                                                    {
+                                                        <span class="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded">就绪</span>
+                                                    }
+                                                    else if (project.Status == "cloning")
+                                                    {
+                                                        <span class="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded flex items-center gap-1">
+                                                            <div class="w-3 h-3 animate-spin rounded-full border-2 border-blue-500 border-t-transparent"></div>
+                                                            克隆中
+                                                        </span>
+                                                    }
+                                                    else if (project.Status == "error")
+                                                    {
+                                                        <span class="px-2 py-0.5 bg-red-100 text-red-600 text-xs rounded">错误</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded">待克隆</span>
+                                                    }
+                                                    <span class="text-sm font-semibold text-gray-800 truncate">@project.Name</span>
+                                                </div>
+                                                <p class="text-xs text-gray-500 truncate mb-1">@project.GitUrl</p>
+                                                <div class="flex items-center gap-3 text-xs text-gray-400">
+                                                    <span>分支: @project.Branch</span>
+                                                    @if (project.LastSyncAt.HasValue)
+                                                    {
+                                                        <span>同步: @project.LastSyncAt.Value.ToString("MM-dd HH:mm")</span>
+                                                    }
+                                                </div>
+                                                @if (!string.IsNullOrEmpty(project.ErrorMessage))
+                                                {
+                                                    <p class="text-xs text-red-500 mt-1">@project.ErrorMessage</p>
+                                                }
+                                            </div>
+                                            <div class="flex items-center gap-1 ml-2">
+                                                @if (project.Status == "pending" || project.Status == "error")
+                                                {
+                                                    <button @onclick="() => CloneProject(project.ProjectId)"
+                                                            disabled="@(_cloningProjectId == project.ProjectId)"
+                                                            class="p-2 hover:bg-green-100 rounded-lg transition-colors disabled:opacity-50"
+                                                            title="克隆项目">
+                                                        @if (_cloningProjectId == project.ProjectId)
+                                                        {
+                                                            <div class="w-4 h-4 animate-spin rounded-full border-2 border-green-500 border-t-transparent"></div>
+                                                        }
+                                                        else
+                                                        {
+                                                            <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                                                            </svg>
+                                                        }
+                                                    </button>
+                                                }
+                                                else if (project.Status == "ready")
+                                                {
+                                                    <button @onclick="() => PullProject(project.ProjectId)"
+                                                            disabled="@(_pullingProjectId == project.ProjectId)"
+                                                            class="p-2 hover:bg-blue-100 rounded-lg transition-colors disabled:opacity-50"
+                                                            title="更新代码">
+                                                        @if (_pullingProjectId == project.ProjectId)
+                                                        {
+                                                            <div class="w-4 h-4 animate-spin rounded-full border-2 border-blue-500 border-t-transparent"></div>
+                                                        }
+                                                        else
+                                                        {
+                                                            <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                                            </svg>
+                                                        }
+                                                    </button>
+                                                }
+                                                <button @onclick="() => ShowEditDialog(project)"
+                                                        class="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                                        title="编辑">
+                                                    <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                                    </svg>
+                                                </button>
+                                                <button @onclick="() => DeleteProject(project.ProjectId)"
+                                                        class="p-2 hover:bg-red-100 rounded-lg transition-colors"
+                                                        title="删除">
+                                                    <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <!-- 创建/编辑项目表单 -->
+                        <div class="space-y-4">
+                            <!-- 项目名称 -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    项目名称 <span class="text-red-500">*</span>
+                                </label>
+                                <input type="text"
+                                       @bind="_formName"
+                                       placeholder="例如：My Project"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900"
+                                       disabled="@_isSaving" />
+                            </div>
+
+                            <!-- Git 仓库地址 -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    Git 仓库地址 <span class="text-red-500">*</span>
+                                </label>
+                                <input type="text"
+                                       @bind="_formGitUrl"
+                                       @bind:event="oninput"
+                                       placeholder="https://github.com/user/repo.git"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900"
+                                       disabled="@_isSaving" />
+                            </div>
+
+                            <!-- 认证方式 -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">认证方式</label>
+                                <select @bind="_formAuthType"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900"
+                                        disabled="@_isSaving">
+                                    <option value="none">公开仓库（无需认证）</option>
+                                    <option value="https">HTTPS（Token认证）</option>
+                                    <option value="ssh">SSH（密钥认证）</option>
+                                </select>
+                            </div>
+
+                            <!-- HTTPS 认证信息 -->
+                            @if (_formAuthType == "https")
+                            {
+                                <div class="space-y-3 pl-4 border-l-2 border-gray-200">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">用户名（可选）</label>
+                                        <input type="text"
+                                               @bind="_formHttpsUsername"
+                                               placeholder="git"
+                                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900"
+                                               disabled="@_isSaving" />
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                                            Token <span class="text-red-500">*</span>
+                                        </label>
+                                        <input type="password"
+                                               @bind="_formHttpsToken"
+                                               placeholder="ghp_xxxx..."
+                                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900"
+                                               disabled="@_isSaving" />
+                                        <p class="text-xs text-gray-500 mt-1">使用 GitHub Personal Access Token 或其他平台的访问令牌</p>
+                                    </div>
+                                </div>
+                            }
+
+                            <!-- SSH 认证信息 -->
+                            @if (_formAuthType == "ssh")
+                            {
+                                <div class="space-y-3 pl-4 border-l-2 border-gray-200">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                                            SSH 私钥 <span class="text-red-500">*</span>
+                                        </label>
+                                        <textarea @bind="_formSshPrivateKey"
+                                                  placeholder="-----BEGIN OPENSSH PRIVATE KEY-----&#10;...&#10;-----END OPENSSH PRIVATE KEY-----"
+                                                  rows="5"
+                                                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 font-mono text-sm"
+                                                  disabled="@_isSaving"></textarea>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">私钥密码（可选）</label>
+                                        <input type="password"
+                                               @bind="_formSshPassphrase"
+                                               placeholder="如果私钥有密码保护，请输入"
+                                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900"
+                                               disabled="@_isSaving" />
+                                    </div>
+                                </div>
+                            }
+
+                            <!-- 分支选择 -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">分支</label>
+                                <div class="flex gap-2">
+                                    <input type="text"
+                                           @bind="_formBranch"
+                                           placeholder="main"
+                                           class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900"
+                                           disabled="@_isSaving" />
+                                    <button @onclick="FetchBranches"
+                                            disabled="@(_isFetchingBranches || string.IsNullOrWhiteSpace(_formGitUrl))"
+                                            class="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
+                                            title="获取分支列表">
+                                        @if (_isFetchingBranches)
+                                        {
+                                            <div class="w-4 h-4 animate-spin rounded-full border-2 border-gray-500 border-t-transparent"></div>
+                                        }
+                                        else
+                                        {
+                                            <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                            </svg>
+                                        }
+                                        获取分支
+                                    </button>
+                                </div>
+                                @if (_availableBranches.Count > 0)
+                                {
+                                    <div class="mt-2 flex flex-wrap gap-1">
+                                        @foreach (var branch in _availableBranches.Take(10))
+                                        {
+                                            <button @onclick="() => _formBranch = branch"
+                                                    class="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded transition-colors @(_formBranch == branch ? "bg-gray-800 text-white hover:bg-gray-700" : "")">
+                                                @branch
+                                            </button>
+                                        }
+                                        @if (_availableBranches.Count > 10)
+                                        {
+                                            <span class="px-2 py-1 text-xs text-gray-400">+@(_availableBranches.Count - 10) 更多</span>
+                                        }
+                                    </div>
+                                }
+                            </div>
+
+                            <!-- 错误提示 -->
+                            @if (!string.IsNullOrEmpty(_formError))
+                            {
+                                <div class="p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
+                                    @_formError
+                                </div>
+                            }
+
+                            <!-- 提交按钮 -->
+                            <div class="flex gap-3">
+                                @if (_editingProject != null)
+                                {
+                                    <button @onclick="CancelEdit"
+                                            class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                                        取消
+                                    </button>
+                                }
+                                <button @onclick="SaveProject"
+                                        disabled="@(_isSaving || string.IsNullOrWhiteSpace(_formName) || string.IsNullOrWhiteSpace(_formGitUrl))"
+                                        class="flex-1 py-3 bg-gray-900 text-white rounded-lg font-medium hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2">
+                                    @if (_isSaving)
+                                    {
+                                        <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                                        <span>保存中...</span>
+                                    }
+                                    else
+                                    {
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                        </svg>
+                                        <span>@(_editingProject != null ? "保存修改" : "创建项目")</span>
+                                    }
+                                </button>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public EventCallback OnProjectsChanged { get; set; }
+
+    private bool _isVisible = false;
+    private string _activeTab = "list";
+    
+    // 项目列表
+    private List<ProjectInfo> _projects = new();
+    private bool _isLoadingProjects = false;
+    private string? _cloningProjectId = null;
+    private string? _pullingProjectId = null;
+    
+    // 表单数据
+    private ProjectInfo? _editingProject = null;
+    private string _formName = string.Empty;
+    private string _formGitUrl = string.Empty;
+    private string _formAuthType = "none";
+    private string? _formHttpsUsername = null;
+    private string? _formHttpsToken = null;
+    private string? _formSshPrivateKey = null;
+    private string? _formSshPassphrase = null;
+    private string _formBranch = "main";
+    private string _formError = string.Empty;
+    private bool _isSaving = false;
+    
+    // 分支列表
+    private List<string> _availableBranches = new();
+    private bool _isFetchingBranches = false;
+
+    public async Task ShowAsync()
+    {
+        _isVisible = true;
+        _activeTab = "list";
+        ResetForm();
+        StateHasChanged();
+        
+        await LoadProjects();
+    }
+
+    public void Close()
+    {
+        _isVisible = false;
+        StateHasChanged();
+    }
+
+    private async Task LoadProjects()
+    {
+        try
+        {
+            _isLoadingProjects = true;
+            StateHasChanged();
+
+            var response = await Http.GetAsync("/api/project");
+            
+            if (response.IsSuccessStatusCode)
+            {
+                _projects = await response.Content.ReadFromJsonAsync<List<ProjectInfo>>() ?? new();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"加载项目列表失败: {ex.Message}");
+        }
+        finally
+        {
+            _isLoadingProjects = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task SaveProject()
+    {
+        if (string.IsNullOrWhiteSpace(_formName) || string.IsNullOrWhiteSpace(_formGitUrl))
+        {
+            _formError = "请填写项目名称和 Git 仓库地址";
+            return;
+        }
+
+        try
+        {
+            _isSaving = true;
+            _formError = string.Empty;
+            StateHasChanged();
+
+            if (_editingProject != null)
+            {
+                // 更新项目
+                var request = new
+                {
+                    Name = _formName,
+                    GitUrl = _formGitUrl,
+                    AuthType = _formAuthType,
+                    HttpsUsername = _formHttpsUsername,
+                    HttpsToken = _formHttpsToken,
+                    SshPrivateKey = _formSshPrivateKey,
+                    SshPassphrase = _formSshPassphrase,
+                    Branch = _formBranch
+                };
+
+                var response = await Http.PutAsJsonAsync($"/api/project/{_editingProject.ProjectId}", request);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    var error = await response.Content.ReadFromJsonAsync<ErrorResponse>();
+                    _formError = error?.Error ?? "更新项目失败";
+                    return;
+                }
+            }
+            else
+            {
+                // 创建项目
+                var request = new
+                {
+                    Name = _formName,
+                    GitUrl = _formGitUrl,
+                    AuthType = _formAuthType,
+                    HttpsUsername = _formHttpsUsername,
+                    HttpsToken = _formHttpsToken,
+                    SshPrivateKey = _formSshPrivateKey,
+                    SshPassphrase = _formSshPassphrase,
+                    Branch = _formBranch
+                };
+
+                var response = await Http.PostAsJsonAsync("/api/project", request);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    var error = await response.Content.ReadFromJsonAsync<ErrorResponse>();
+                    _formError = error?.Error ?? "创建项目失败";
+                    return;
+                }
+            }
+
+            // 成功后刷新列表
+            await LoadProjects();
+            await OnProjectsChanged.InvokeAsync();
+            
+            // 切换到列表页
+            _activeTab = "list";
+            ResetForm();
+        }
+        catch (Exception ex)
+        {
+            _formError = $"操作失败: {ex.Message}";
+        }
+        finally
+        {
+            _isSaving = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CloneProject(string projectId)
+    {
+        try
+        {
+            _cloningProjectId = projectId;
+            StateHasChanged();
+
+            var response = await Http.PostAsync($"/api/project/{projectId}/clone", null);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var error = await response.Content.ReadFromJsonAsync<ErrorResponse>();
+                Console.WriteLine($"克隆项目失败: {error?.Error}");
+            }
+
+            await LoadProjects();
+            await OnProjectsChanged.InvokeAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"克隆项目失败: {ex.Message}");
+        }
+        finally
+        {
+            _cloningProjectId = null;
+            StateHasChanged();
+        }
+    }
+
+    private async Task PullProject(string projectId)
+    {
+        try
+        {
+            _pullingProjectId = projectId;
+            StateHasChanged();
+
+            var response = await Http.PostAsync($"/api/project/{projectId}/pull", null);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var error = await response.Content.ReadFromJsonAsync<ErrorResponse>();
+                Console.WriteLine($"更新项目失败: {error?.Error}");
+            }
+
+            await LoadProjects();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"更新项目失败: {ex.Message}");
+        }
+        finally
+        {
+            _pullingProjectId = null;
+            StateHasChanged();
+        }
+    }
+
+    private async Task DeleteProject(string projectId)
+    {
+        try
+        {
+            var response = await Http.DeleteAsync($"/api/project/{projectId}");
+            
+            if (response.IsSuccessStatusCode)
+            {
+                await LoadProjects();
+                await OnProjectsChanged.InvokeAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"删除项目失败: {ex.Message}");
+        }
+    }
+
+    private async Task FetchBranches()
+    {
+        if (string.IsNullOrWhiteSpace(_formGitUrl))
+        {
+            return;
+        }
+
+        try
+        {
+            _isFetchingBranches = true;
+            _availableBranches.Clear();
+            StateHasChanged();
+
+            var request = new
+            {
+                GitUrl = _formGitUrl,
+                AuthType = _formAuthType,
+                HttpsUsername = _formHttpsUsername,
+                HttpsToken = _formHttpsToken,
+                SshPrivateKey = _formSshPrivateKey,
+                SshPassphrase = _formSshPassphrase
+            };
+
+            var response = await Http.PostAsJsonAsync("/api/project/branches", request);
+
+            if (response.IsSuccessStatusCode)
+            {
+                _availableBranches = await response.Content.ReadFromJsonAsync<List<string>>() ?? new();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"获取分支列表失败: {ex.Message}");
+        }
+        finally
+        {
+            _isFetchingBranches = false;
+            StateHasChanged();
+        }
+    }
+
+    private void ShowEditDialog(ProjectInfo project)
+    {
+        _editingProject = project;
+        _formName = project.Name;
+        _formGitUrl = project.GitUrl;
+        _formAuthType = project.AuthType;
+        _formBranch = project.Branch;
+        // 注意：不填充敏感信息
+        _formHttpsUsername = null;
+        _formHttpsToken = null;
+        _formSshPrivateKey = null;
+        _formSshPassphrase = null;
+        _formError = string.Empty;
+        _activeTab = "create";
+        StateHasChanged();
+    }
+
+    private void CancelEdit()
+    {
+        ResetForm();
+        _activeTab = "list";
+        StateHasChanged();
+    }
+
+    private void ResetForm()
+    {
+        _editingProject = null;
+        _formName = string.Empty;
+        _formGitUrl = string.Empty;
+        _formAuthType = "none";
+        _formHttpsUsername = null;
+        _formHttpsToken = null;
+        _formSshPrivateKey = null;
+        _formSshPassphrase = null;
+        _formBranch = "main";
+        _formError = string.Empty;
+        _availableBranches.Clear();
+    }
+
+    private class ErrorResponse
+    {
+        public string? Error { get; set; }
+    }
+}

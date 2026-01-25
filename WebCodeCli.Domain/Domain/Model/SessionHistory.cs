@@ -44,4 +44,14 @@ public class SessionHistory
     /// 工作区是否有效
     /// </summary>
     public bool IsWorkspaceValid { get; set; } = true;
+    
+    /// <summary>
+    /// 关联的项目ID（可选）
+    /// </summary>
+    public string? ProjectId { get; set; }
+    
+    /// <summary>
+    /// 关联的项目名称（仅用于显示）
+    /// </summary>
+    public string? ProjectName { get; set; }
 }

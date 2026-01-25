@@ -1396,6 +1396,57 @@ public class CliExecutorService : ICliExecutorService
             return GetOrCreateSessionWorkspace(sessionId);
         }
     }
+    
+    /// <summary>
+    /// 初始化会话工作区（可选择关联项目）
+    /// </summary>
+    public async Task<string> InitializeSessionWorkspaceAsync(string sessionId, string? projectId = null)
+    {
+        // 先创建基本工作区
+        var workspacePath = GetOrCreateSessionWorkspace(sessionId);
+        
+        // 如果指定了项目ID，从项目复制代码
+        if (!string.IsNullOrEmpty(projectId))
+        {
+            try
+            {
+                using var scope = _serviceProvider.CreateScope();
+                var projectService = scope.ServiceProvider.GetService<IProjectService>();
+                
+                if (projectService != null)
+                {
+                    // 检查工作区是否为空（只有空工作区才复制项目代码）
+                    var workspaceIsEmpty = !Directory.Exists(workspacePath) || 
+                                           !Directory.EnumerateFileSystemEntries(workspacePath)
+                                               .Any(e => !Path.GetFileName(e).StartsWith(".workspace"));
+                    
+                    if (workspaceIsEmpty)
+                    {
+                        var (success, errorMessage) = await projectService.CopyProjectToWorkspaceAsync(projectId, workspacePath);
+                        
+                        if (success)
+                        {
+                            _logger.LogInformation("已从项目 {ProjectId} 复制代码到会话工作区 {SessionId}", projectId, sessionId);
+                        }
+                        else
+                        {
+                            _logger.LogWarning("从项目复制代码失败: {Error}", errorMessage);
+                        }
+                    }
+                    else
+                    {
+                        _logger.LogInformation("会话工作区已有内容，跳过项目代码复制: {SessionId}", sessionId);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "初始化项目代码到工作区失败: {SessionId}, {ProjectId}", sessionId, projectId);
+            }
+        }
+        
+        return workspacePath;
+    }
 
     /// <summary>
     /// 解析命令路径,如果配置了npm目录且命令是相对路径,则拼接完整路径

@@ -43,7 +43,9 @@ public class SessionController : ControllerBase
                 CreatedAt = s.CreatedAt,
                 UpdatedAt = s.UpdatedAt,
                 IsWorkspaceValid = s.IsWorkspaceValid,
-                MessageCount = s.Messages?.Count ?? 0
+                MessageCount = s.Messages?.Count ?? 0,
+                ProjectId = s.ProjectId,
+                ProjectName = s.ProjectName
             }).ToList();
             
             return Ok(summaries);
@@ -217,4 +219,6 @@ public class SessionSummaryDto
     public DateTime UpdatedAt { get; set; }
     public bool IsWorkspaceValid { get; set; }
     public int MessageCount { get; set; }
+    public string? ProjectId { get; set; }
+    public string? ProjectName { get; set; }
 }

@@ -486,6 +486,7 @@ public class SessionHistoryManager : ISessionHistoryManager, IAsyncDisposable
             CreatedAt = entity.CreatedAt,
             UpdatedAt = entity.UpdatedAt,
             IsWorkspaceValid = entity.IsWorkspaceValid,
+            ProjectId = entity.ProjectId,
             Messages = messageEntities.Select(m => new ChatMessage
             {
                 Role = m.Role,
@@ -506,7 +507,8 @@ public class SessionHistoryManager : ISessionHistoryManager, IAsyncDisposable
             ToolId = session.ToolId,
             CreatedAt = session.CreatedAt,
             UpdatedAt = session.UpdatedAt,
-            IsWorkspaceValid = session.IsWorkspaceValid
+            IsWorkspaceValid = session.IsWorkspaceValid,
+            ProjectId = session.ProjectId
         };
     }
 

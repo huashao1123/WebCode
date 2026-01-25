@@ -186,5 +186,18 @@ public interface ICliExecutorService
     /// <param name="relativePaths">相对路径列表</param>
     /// <returns>成功删除的文件数量</returns>
     Task<int> BatchDeleteFilesAsync(string sessionId, List<string> relativePaths);
+    
+    /// <summary>
+    /// 初始化会话工作区（可选择关联项目）
+    /// </summary>
+    /// <param name="sessionId">会话ID</param>
+    /// <param name="projectId">项目ID（可选，如果提供则从项目复制代码）</param>
+    /// <returns>工作区路径</returns>
+    Task<string> InitializeSessionWorkspaceAsync(string sessionId, string? projectId = null);
+    
+    /// <summary>
+    /// 刷新工作区根目录缓存（当数据库配置更新时调用）
+    /// </summary>
+    void RefreshWorkspaceRootCache();
 }
 

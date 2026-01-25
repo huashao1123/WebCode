@@ -90,6 +90,18 @@ namespace WebCodeCli.Domain.Common.Extensions
                 {
                     Console.WriteLine($"初始化聊天会话相关表失败: {ex.Message}");
                 }
+                
+                // 初始化项目管理相关表和索引
+                try
+                {
+                    Console.WriteLine("开始初始化项目管理表...");
+                    _repository.GetDB().InitializeProjectTables();
+                    Console.WriteLine("项目管理表初始化成功");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"初始化项目管理表失败: {ex.Message}");
+                }
             }
         }
 

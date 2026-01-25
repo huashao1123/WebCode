@@ -9,6 +9,7 @@ using WebCodeCli.Domain.Repositories.Base.Template;
 using WebCodeCli.Domain.Repositories.Base.InputHistory;
 using WebCodeCli.Domain.Repositories.Base.QuickAction;
 using WebCodeCli.Domain.Repositories.Base.UserSetting;
+using WebCodeCli.Domain.Repositories.Base.Project;
 
 namespace WebCodeCli.Domain.Common.Extensions;
 
@@ -56,6 +57,55 @@ public static class DatabaseInitializer
         {
             logger?.LogError(ex, "初始化会话分享表失败");
             throw;
+        }
+    }
+    
+    /// <summary>
+    /// 初始化项目管理相关的数据库表
+    /// </summary>
+    public static void InitializeProjectTables(this SqlSugarScope db, ILogger? logger = null)
+    {
+        try
+        {
+            logger?.LogInformation("开始初始化项目管理表...");
+            
+            // 创建项目表
+            db.CodeFirst.InitTables<ProjectEntity>();
+            
+            logger?.LogInformation("项目管理表初始化成功");
+            
+            // 创建索引
+            InitializeProjectIndexes(db, logger);
+        }
+        catch (Exception ex)
+        {
+            logger?.LogError(ex, "初始化项目管理表失败");
+            throw;
+        }
+    }
+    
+    /// <summary>
+    /// 为项目表创建索引
+    /// </summary>
+    private static void InitializeProjectIndexes(SqlSugarScope db, ILogger? logger = null)
+    {
+        try
+        {
+            logger?.LogInformation("开始创建项目相关索引...");
+            
+            // Project: Username + UpdatedAt 索引（项目列表排序）
+            CreateIndexIfNotExists(db, "Project", "IX_Project_Username_UpdatedAt", 
+                new[] { "Username", "UpdatedAt" }, logger);
+            
+            // Project: Username + Name 唯一索引（确保同一用户的项目名称唯一）
+            CreateIndexIfNotExists(db, "Project", "IX_Project_Username_Name", 
+                new[] { "Username", "Name" }, logger, isUnique: true);
+            
+            logger?.LogInformation("项目相关索引创建成功");
+        }
+        catch (Exception ex)
+        {
+            logger?.LogWarning(ex, "创建项目索引时发生警告（可能索引已存在）");
         }
     }
     
