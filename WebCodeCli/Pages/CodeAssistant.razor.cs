@@ -186,6 +186,12 @@ public partial class CodeAssistant : ComponentBase, IAsyncDisposable
     // 移动端预览区折叠状态
     private bool _isPreviewCollapsed = false;
 
+    // PC 端左右面板拖拽宽度
+    private int _chatPanelWidth = 600;
+    private const int ChatPanelMinWidth = 360;
+    private const int ChatPanelMaxWidth = 900;
+    private DotNetObjectReference<CodeAssistant>? _splitterDotNetRef;
+
     // 设备类型检测（用于PC/移动端路由跳转）
     private bool _hasCheckedDevice = false;
     
@@ -420,6 +426,21 @@ public partial class CodeAssistant : ComponentBase, IAsyncDisposable
 
                 // 绑定输入框 Tab 技能选择（仅在需要时拦截 Tab）
                 await JSRuntime.InvokeVoidAsync("setupSkillTabSelect", "input-message");
+
+                // 初始化 PC 端左右面板拖拽分隔条
+                _splitterDotNetRef ??= DotNetObjectReference.Create(this);
+                await JSRuntime.InvokeVoidAsync("initCodeAssistantSplit", new
+                {
+                    containerId = "code-assistant-split-container",
+                    chatId = "code-assistant-chat-panel",
+                    previewId = "code-assistant-preview-panel",
+                    dividerId = "code-assistant-splitter",
+                    minChatWidth = ChatPanelMinWidth,
+                    maxChatWidth = ChatPanelMaxWidth,
+                    minPreviewWidth = 420,
+                    initialChatWidth = _chatPanelWidth,
+                    dotNetRef = _splitterDotNetRef
+                });
             }
             catch (Exception ex)
             {
@@ -2225,6 +2246,8 @@ public partial class CodeAssistant : ComponentBase, IAsyncDisposable
             await _outputStateSaveTimer.DisposeAsync();
         }
 
+        _splitterDotNetRef?.Dispose();
+
         try
         {
             await JSRuntime.InvokeVoidAsync("disposeSkillTabSelect", "input-message");
@@ -2259,6 +2282,20 @@ public partial class CodeAssistant : ComponentBase, IAsyncDisposable
         {
             Console.WriteLine($"清理会话缓存失败: {ex.Message}");
         }
+    }
+
+    private string GetChatPanelStyle()
+    {
+        var width = Math.Clamp(_chatPanelWidth, ChatPanelMinWidth, ChatPanelMaxWidth);
+        return $"width: {width}px; min-width: {ChatPanelMinWidth}px; max-width: {ChatPanelMaxWidth}px;";
+    }
+
+    [JSInvokable]
+    public Task UpdateChatPanelWidth(int width)
+    {
+        _chatPanelWidth = Math.Clamp(width, ChatPanelMinWidth, ChatPanelMaxWidth);
+        StateHasChanged();
+        return Task.CompletedTask;
     }
 
     private async Task LoadWorkspaceFiles()

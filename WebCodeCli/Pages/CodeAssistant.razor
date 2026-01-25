@@ -29,7 +29,7 @@
     }
 </button>
 
-<div class="flex flex-col lg:flex-row h-screen bg-gray-50 overflow-hidden" @key="_currentLanguage">
+<div id="code-assistant-split-container" class="flex flex-col lg:flex-row h-screen bg-gray-50 overflow-hidden" @key="_currentLanguage">
     <!-- 会话列表侧边栏（桌面端） -->
     @if (_showSessionList)
     {
@@ -349,8 +349,8 @@
         </div>
     }
     
-     <!-- 右侧预览区 -->
-    <div class="@(_isPreviewCollapsed ? "hidden lg:flex" : "flex") flex-1 bg-white/60 backdrop-blur-sm p-3 sm:p-4 lg:p-6 flex-col overflow-hidden min-w-0 transition-all duration-300 relative">
+    <!-- 右侧预览区 -->
+    <div id="code-assistant-preview-panel" class="@(_isPreviewCollapsed ? "hidden lg:flex" : "flex") flex-1 bg-white/60 backdrop-blur-sm p-3 sm:p-4 lg:p-6 flex-col overflow-hidden min-w-0 lg:min-w-[420px] transition-all duration-300 relative">
         <!-- Tabs -->
         <div class="mb-3 sm:mb-4 lg:mb-5 border-b-2 border-gray-200 flex-shrink-0 bg-white/80 rounded-t-lg sm:rounded-t-xl -mx-3 sm:-mx-4 lg:-mx-6 px-3 sm:px-4 lg:px-6 overflow-x-auto overflow-y-hidden">
             <nav class="-mb-0.5 flex space-x-1 min-w-max">
@@ -835,8 +835,11 @@
         </div>
     </div>
    
+    <!-- PC 端拖拽分隔条 -->
+    <div id="code-assistant-splitter" class="hidden lg:flex w-1 bg-gray-200 hover:bg-gray-300 active:bg-gray-400 cursor-col-resize transition-colors" role="separator" aria-orientation="vertical"></div>
+
     <!-- 左侧聊天区 -->
-    <div class="@(_isPreviewCollapsed ? "h-full" : "max-h-[50vh]") w-full lg:w-[600px] bg-white/80 backdrop-blur-sm p-3 sm:p-4 lg:p-6 border-b lg:border-b-0 lg:border-r border-gray-200 flex flex-col overflow-hidden shadow-lg lg:max-h-full transition-all duration-300">
+    <div id="code-assistant-chat-panel" class="@(_isPreviewCollapsed ? "h-full" : "max-h-[50vh]") w-full lg:flex-shrink-0 bg-white/80 backdrop-blur-sm p-3 sm:p-4 lg:p-6 border-b lg:border-b-0 lg:border-r border-gray-200 flex flex-col overflow-hidden shadow-lg lg:max-h-full transition-all duration-300" style="@GetChatPanelStyle()">
         <!-- 用户信息栏 -->
         @if (_showUserInfo)
         {

@@ -290,3 +290,113 @@ window.disposeSkillTabSelect = function(elementId) {
     delete window._skillTabSelectHandlers[elementId];
 };
 
+// 代码助手左右分隔条拖拽
+window.initCodeAssistantSplit = function(options) {
+    const cfg = options || {};
+    const container = document.getElementById(cfg.containerId);
+    const chat = document.getElementById(cfg.chatId);
+    const preview = document.getElementById(cfg.previewId);
+    const divider = document.getElementById(cfg.dividerId);
+
+    if (!container || !chat || !preview || !divider) {
+        return;
+    }
+
+    // 防止重复绑定
+    if (divider._splitHandlers) {
+        const h = divider._splitHandlers;
+        divider.removeEventListener('pointerdown', h.onPointerDown);
+        window.removeEventListener('pointermove', h.onPointerMove);
+        window.removeEventListener('pointerup', h.onPointerUp);
+        window.removeEventListener('resize', h.onResize);
+    }
+
+    const minChatWidth = Number(cfg.minChatWidth || 360);
+    const maxChatWidth = Number(cfg.maxChatWidth || 900);
+    const minPreviewWidth = Number(cfg.minPreviewWidth || 420);
+    const dotNetRef = cfg.dotNetRef || null;
+
+    const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+
+    const getMaxChatWidth = (rect) => {
+        const maxByPreview = Math.max(minChatWidth, rect.width - minPreviewWidth);
+        return Math.min(maxChatWidth, maxByPreview);
+    };
+
+    const applyWidth = (width, notify) => {
+        if (!window.matchMedia('(min-width: 1024px)').matches) {
+            chat.style.width = '100%';
+            chat.style.flex = '0 0 auto';
+            preview.style.flex = '1 1 0%';
+            return;
+        }
+        if (!Number.isFinite(width)) {
+            return;
+        }
+        const rect = container.getBoundingClientRect();
+        const maxWidth = getMaxChatWidth(rect);
+        const next = clamp(width, minChatWidth, maxWidth);
+        chat.style.width = `${Math.round(next)}px`;
+        chat.style.flex = '0 0 auto';
+        preview.style.flex = '1 1 0%';
+
+        if (notify && dotNetRef) {
+            dotNetRef.invokeMethodAsync('UpdateChatPanelWidth', Math.round(next));
+        }
+    };
+
+    if (cfg.initialChatWidth) {
+        applyWidth(Number(cfg.initialChatWidth), false);
+    }
+
+    let dragging = false;
+
+    const onPointerDown = (e) => {
+        if (!window.matchMedia('(min-width: 1024px)').matches) {
+            return;
+        }
+        dragging = true;
+        try {
+            divider.setPointerCapture(e.pointerId);
+        } catch {}
+        document.body.classList.add('select-none');
+        e.preventDefault();
+    };
+
+    const onPointerMove = (e) => {
+        if (!dragging) {
+            return;
+        }
+        const rect = container.getBoundingClientRect();
+        const next = rect.right - e.clientX;
+        applyWidth(next, false);
+        e.preventDefault();
+    };
+
+    const onPointerUp = () => {
+        if (!dragging) {
+            return;
+        }
+        dragging = false;
+        document.body.classList.remove('select-none');
+        const current = parseFloat(chat.style.width || '0');
+        if (current > 0) {
+            applyWidth(current, true);
+        }
+    };
+
+    const onResize = () => {
+        const current = parseFloat(chat.style.width || '0');
+        if (current > 0) {
+            applyWidth(current, true);
+        }
+    };
+
+    divider.addEventListener('pointerdown', onPointerDown);
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
+    window.addEventListener('resize', onResize);
+
+    divider._splitHandlers = { onPointerDown, onPointerMove, onPointerUp, onResize };
+};
+
