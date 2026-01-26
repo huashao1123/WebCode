@@ -8,15 +8,51 @@ window.textareaResizeManager = {
         heightTolerance: 1 // Pixel tolerance for height comparison to avoid floating point issues
     },
 
+    // Track if initialized
+    _initialized: false,
+    _restoredTextareas: new Set(),
+
     // Initialize textarea resize functionality
     init: function() {
+        if (this._initialized) {
+            // 如果已初始化，只需恢复高度
+            this.restoreHeights();
+            return;
+        }
+        
         // Restore saved heights on page load
         this.restoreHeights();
         
         // Setup observers for all textareas
         this.observeTextareas();
         
+        // 监听 Blazor 页面增强事件
+        this.setupBlazorListeners();
+        
+        this._initialized = true;
         console.log('Textarea resize manager initialized');
+    },
+    
+    // 设置 Blazor 监听器
+    setupBlazorListeners: function() {
+        // 使用 MutationObserver 监听 DOM 变化后恢复高度
+        const manager = this;
+        const observer = new MutationObserver((mutations) => {
+            // 延迟执行以确保 DOM 完全更新
+            requestAnimationFrame(() => {
+                manager.restoreHeights();
+            });
+        });
+        
+        // 只观察关键容器的变化
+        const targetNode = document.getElementById('code-assistant-split-container');
+        if (targetNode) {
+            observer.observe(targetNode, {
+                childList: true,
+                subtree: true,
+                attributes: false
+            });
+        }
     },
 
     // Get saved heights from localStorage
@@ -49,27 +85,63 @@ window.textareaResizeManager = {
     // Restore saved heights to textareas
     restoreHeights: function() {
         const savedHeights = this.getSavedHeights();
+        const manager = this;
         
         Object.keys(savedHeights).forEach(textareaId => {
             const textarea = document.getElementById(textareaId);
             if (textarea) {
-                const height = this.constrainHeight(savedHeights[textareaId]);
-                textarea.style.height = height + 'px';
+                const height = manager.constrainHeight(savedHeights[textareaId]);
+                // 使用 !important 确保覆盖内联样式
+                textarea.style.setProperty('height', height + 'px', 'important');
+                // min-height 始终使用配置的最小值，而不是保存的高度
+                textarea.style.setProperty('min-height', manager.config.minHeight + 'px');
+                manager._restoredTextareas.add(textareaId);
             }
         });
+    },
+    
+    // 手动恢复指定 textarea 的高度
+    restoreTextareaHeight: function(textareaId) {
+        const savedHeights = this.getSavedHeights();
+        const savedHeight = savedHeights[textareaId];
+        
+        if (savedHeight) {
+            const textarea = document.getElementById(textareaId);
+            if (textarea) {
+                const height = this.constrainHeight(savedHeight);
+                textarea.style.setProperty('height', height + 'px', 'important');
+                // min-height 始终使用配置的最小值，而不是保存的高度
+                textarea.style.setProperty('min-height', this.config.minHeight + 'px');
+                return height;
+            }
+        }
+        return null;
     },
 
     // Setup ResizeObserver for a textarea
     setupResizeObserver: function(textarea) {
         const textareaId = textarea.id;
         if (!textareaId) return;
-
-        // Apply initial constraints
-        const currentHeight = textarea.offsetHeight;
-        if (currentHeight) {
-            const constrainedHeight = this.constrainHeight(currentHeight);
-            if (currentHeight !== constrainedHeight) {
-                textarea.style.height = constrainedHeight + 'px';
+        
+        const manager = this;
+        
+        // 先尝试恢复保存的高度
+        const savedHeights = this.getSavedHeights();
+        const savedHeight = savedHeights[textareaId];
+        
+        if (savedHeight) {
+            const height = this.constrainHeight(savedHeight);
+            textarea.style.setProperty('height', height + 'px', 'important');
+            // min-height 始终使用配置的最小值
+            textarea.style.setProperty('min-height', this.config.minHeight + 'px');
+        } else {
+            // Apply initial constraints
+            const currentHeight = textarea.offsetHeight;
+            if (currentHeight) {
+                const constrainedHeight = this.constrainHeight(currentHeight);
+                if (currentHeight !== constrainedHeight) {
+                    textarea.style.setProperty('height', constrainedHeight + 'px');
+                }
             }
         }
 
@@ -77,18 +149,20 @@ window.textareaResizeManager = {
         const resizeObserver = new ResizeObserver(entries => {
             for (let entry of entries) {
                 const target = entry.target;
-                const newHeight = entry.contentRect.height;
+                // 使用 offsetHeight 获取完整高度（包含 padding 和 border）
+                // 而不是 contentRect.height（只有内容区域高度）
+                const newHeight = target.offsetHeight;
                 
                 // Apply constraints and save
-                const constrainedHeight = this.constrainHeight(newHeight);
+                const constrainedHeight = manager.constrainHeight(newHeight);
                 
                 // Only update if height changed and needs constraining
-                if (Math.abs(newHeight - constrainedHeight) > this.config.heightTolerance) {
-                    target.style.height = constrainedHeight + 'px';
+                if (Math.abs(newHeight - constrainedHeight) > manager.config.heightTolerance) {
+                    target.style.setProperty('height', constrainedHeight + 'px');
                 }
                 
                 // Save to localStorage (with debounce)
-                this.debouncedSave(textareaId, constrainedHeight);
+                manager.debouncedSave(textareaId, constrainedHeight);
             }
         });
 
@@ -101,14 +175,14 @@ window.textareaResizeManager = {
     // Debounced save function
     debouncedSave: (function() {
         let timeouts = {};
-        const manager = this;
         return function(textareaId, height) {
             if (timeouts[textareaId]) {
                 clearTimeout(timeouts[textareaId]);
             }
             timeouts[textareaId] = setTimeout(() => {
                 window.textareaResizeManager.saveHeight(textareaId, height);
-            }, 500); // Save 500ms after resize stops
+                console.log('Textarea height saved:', textareaId, height);
+            }, 300); // Save 300ms after resize stops
         };
     })(),
 
@@ -156,8 +230,26 @@ if (document.readyState === 'loading') {
 // Also re-initialize after Blazor renders
 if (window.Blazor) {
     window.Blazor.addEventListener('enhancedload', () => {
-        window.textareaResizeManager.restoreHeights();
+        // 延迟恢复以确保 DOM 完全更新
+        setTimeout(() => {
+            window.textareaResizeManager.restoreHeights();
+        }, 100);
     });
 }
+
+// 提供一个全局方法供 Blazor 调用
+window.restoreTextareaHeights = function() {
+    if (window.textareaResizeManager) {
+        window.textareaResizeManager.restoreHeights();
+    }
+};
+
+// 提供恢复单个 textarea 高度的方法
+window.restoreTextareaHeight = function(textareaId) {
+    if (window.textareaResizeManager) {
+        return window.textareaResizeManager.restoreTextareaHeight(textareaId);
+    }
+    return null;
+};
 
 console.log('Textarea resize script loaded');

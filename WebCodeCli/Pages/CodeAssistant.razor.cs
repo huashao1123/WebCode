@@ -449,6 +449,9 @@ public partial class CodeAssistant : ComponentBase, IAsyncDisposable
                     initialChatWidth = _chatPanelWidth,
                     dotNetRef = _splitterDotNetRef
                 });
+
+                // 恢复输入框高度
+                await JSRuntime.InvokeVoidAsync("restoreTextareaHeight", "input-message");
             }
             catch (Exception ex)
             {
