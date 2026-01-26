@@ -314,7 +314,7 @@
                                 }
                                 else
                                 {
-                                    <div class="text-sm leading-relaxed break-words whitespace-pre-wrap">
+                                    <div class="text-sm leading-relaxed break-words whitespace-pre-wrap message-bubble">
                                         @if (message.Role == "user")
                                         {
                                             @message.Content
@@ -338,7 +338,7 @@
                             <div class="bg-white border border-gray-200 text-gray-800 rounded-2xl rounded-bl-md max-w-[85%] shadow-sm px-4 py-3">
                                 @if (!string.IsNullOrEmpty(_currentAssistantMessage))
                                 {
-                                    <div class="text-sm leading-relaxed break-words">@RenderMarkdown(_currentAssistantMessage)</div>
+                                    <div class="text-sm leading-relaxed break-words message-bubble">@RenderMarkdown(_currentAssistantMessage)</div>
                                 }
                                 else
                                 {
@@ -1061,7 +1061,19 @@
     /* 消息气泡样式 */
     .message-bubble {
         word-break: break-word;
-        overflow-wrap: break-word;
+        overflow-wrap: anywhere;
+    }
+
+    .message-bubble * {
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+
+    .message-bubble pre,
+    .message-bubble code {
+        white-space: pre-wrap;
+        word-break: break-word;
+        overflow-wrap: anywhere;
     }
     
     /* 底部固定元素的阴影 */
