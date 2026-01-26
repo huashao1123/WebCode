@@ -260,6 +260,7 @@
     "noSessions": "セッション記録なし",
     "createSessionHint": "上のボタンをクリックして新しいセッションを作成",
     "selectTool": "ツールを選択",
+    "selectSkill": "スキルを選択",
     "envConfig": "環境設定",
     "envConfigDesc": "ツールに必要な環境変数を管理する",
     "contextManagement": "コンテキスト管理",

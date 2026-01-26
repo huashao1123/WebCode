@@ -260,6 +260,7 @@
     "noSessions": "세션 기록 없음",
     "createSessionHint": "위 버튼을 클릭하여 새 세션을 만드세요",
     "selectTool": "도구 선택",
+    "selectSkill": "스킬 선택",
     "envConfig": "환경 설정",
     "envConfigDesc": "도구에 필요한 환경 변수 관리",
     "contextManagement": "컨텍스트 관리",

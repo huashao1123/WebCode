@@ -213,6 +213,7 @@
     "noSessions": "No sessions",
     "createSessionHint": "Click the button above to create a new session",
     "selectTool": "Select Tool",
+    "selectSkill": "Select Skill",
     "envConfig": "Configure Environment",
     "envConfigDesc": "Manage environment variables required for tools",
     "contextManagement": "Context",
