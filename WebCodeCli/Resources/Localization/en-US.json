@@ -1,4 +1,15 @@
 {
+  "activityBar": {
+    "chat": "Chat",
+    "sessions": "Sessions",
+    "projects": "Projects",
+    "tasks": "Tasks",
+    "settings": "Settings"
+  },
+  "sidePanel": {
+    "tasksComingSoon": "Tasks Coming Soon",
+    "tasksComingSoonHint": "Stay tuned for task management..."
+  },
   "common": {
     "save": "Save",
     "cancel": "Cancel",
@@ -118,6 +129,9 @@
   },
   "version": {
     "updateTitle": "Update Available",
+    "checkUpdate": "Check for Updates",
+    "currentVersion": "Current Version",
+    "newVersion": "New Version",
     "checking": "Checking for updates...",
     "checkFailed": "Update check failed",
     "current": "Current version",
@@ -128,6 +142,9 @@
     "viewUpdate": "View update",
     "upToDate": "You're up to date",
     "githubReleases": "GitHub Releases"
+  },
+  "settings": {
+    "envConfig": "Environment Configuration"
   },
   "cliEvent": {
     "title": {
@@ -249,6 +266,7 @@
     "folderDeleteWarning": "The folder and all its contents will be permanently deleted",
     "fileDeleteWarning": "The file will be permanently deleted",
     "renameSession": "Rename Session",
+    "shareSession": "Share Session",
     "deleteSession": "Delete Session",
     "deleteSessionWarning": "Are you sure you want to delete this session? This action cannot be undone.",
     "sessionName": "Session Name",

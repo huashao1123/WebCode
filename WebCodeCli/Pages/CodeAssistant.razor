@@ -10,7 +10,83 @@
 <PageTitle>@T("codeAssistant.title")</PageTitle>
 
 <div id="code-assistant-split-container" class="flex flex-row h-screen bg-gray-50 overflow-hidden" @key="_currentLanguage">
-    <SessionListPanel Show="@_showSessionList"
+    <!-- Activity Bar - IDE风格侧边图标菜单 (仅PC端显示) -->
+    <ActivityBar ActiveItem="@_activeMenuItem"
+                 OnItemChanged="HandleMenuItemChange"
+                 ChatTitle="@T("activityBar.chat")"
+                 SessionsTitle="@T("activityBar.sessions")"
+                 TemplatesTitle="@T("templateLibrary.title")"
+                 ProjectsTitle="@T("activityBar.projects")"
+                 ContextTitle="@T("codeAssistant.contextManagement")"
+                 TasksTitle="@T("activityBar.tasks")"
+                 SettingsTitle="@T("activityBar.settings")" />
+
+    <!-- SidePanel - 侧边面板容器 (仅PC端显示) -->
+    <SidePanel Show="@_showSidePanel"
+               ActiveView="@_activeMenuItem"
+               Width="280"
+               OnClose="CloseSidePanel"
+               CloseText="@T("common.close")"
+               SessionsTitle="@T("activityBar.sessions")"
+               ContextTitle="@T("codeAssistant.contextManagement")"
+               TasksTitle="@T("activityBar.tasks")"
+               SettingsTitle="@T("activityBar.settings")"
+               TasksComingSoonText="@T("sidePanel.tasksComingSoon")"
+               TasksComingSoonHint="@T("sidePanel.tasksComingSoonHint")">
+        <SessionsContent>
+            <SessionListPanel Show="true"
+                              Embedded="true"
+                              ShowHeader="false"
+                              Sessions="@_sessions"
+                              SelectedSessionIds="@_selectedSessionIds"
+                              IsMultiSelectMode="@_isSessionMultiSelectMode"
+                              IsLoadingSessions="@_isLoadingSessions"
+                              IsLoadingSession="@_isLoadingSession"
+                              CurrentSessionId="@(_currentSession?.SessionId ?? string.Empty)"
+                              TitleText="@T("codeAssistant.sessionHistory")"
+                              CloseText="@T("common.close")"
+                              DeselectAllText="@T("codeAssistant.deselectAll")"
+                              SelectAllText="@T("common.selectAll")"
+                              BatchDeleteText="@T("codeAssistant.batchDelete")"
+                              CancelText="@T("common.cancel")"
+                              NewSessionText="@T("codeAssistant.newSession")"
+                              MultiSelectText="@T("codeAssistant.multiSelect")"
+                              LoadingText="@T("common.loading")"
+                              RenameText="@T("codeAssistant.renameSession")"
+                              DeleteText="@T("common.delete")"
+                              ShareSessionText="@T("codeAssistant.shareSession")"
+                              NoSessionsText="@T("codeAssistant.noSessions")"
+                              CreateSessionHintText="@T("codeAssistant.createSessionHint")"
+                              OnClose="CloseSidePanel"
+                              OnCreateNewSession="CreateNewSession"
+                              OnToggleMultiSelect="ToggleSessionMultiSelectMode"
+                              OnToggleSelectAll="ToggleSelectAllSessions"
+                              OnShowBatchDelete="ShowBatchSessionDeleteDialog"
+                              OnSessionSelected="LoadSession"
+                              OnToggleSessionSelection="ToggleSessionSelection"
+                              OnShareSession="ShowShareDialog"
+                              OnRenameSession="ShowRenameDialog"
+                              OnDeleteSession="ShowDeleteDialog"
+                              GetSessionItemClass="GetSessionItemClass"
+                              FormatDateTime="FormatDateTime" />
+        </SessionsContent>
+        <ContextContent>
+            <div class="h-full">
+                <ContextPreviewPanel @ref="_contextPreviewPanel"
+                                     Embedded="true"
+                                     ShowHeader="false"
+                                     IsActive="@(_activeMenuItem == "context")"
+                                     SessionId="@_sessionId"
+                                     OnContextChanged="OnContextChanged" />
+            </div>
+        </ContextContent>
+        <SettingsContent>
+            @RenderSettingsPanel()
+        </SettingsContent>
+    </SidePanel>
+
+    <!-- 移动端会话列表面板 (保持原有行为) -->
+    <SessionListPanel Show="@(_showSessionList && !_showSidePanel)"
                       Sessions="@_sessions"
                       SelectedSessionIds="@_selectedSessionIds"
                       IsMultiSelectMode="@_isSessionMultiSelectMode"
@@ -28,7 +104,7 @@
                       LoadingText="@T("common.loading")"
                       RenameText="@T("codeAssistant.renameSession")"
                       DeleteText="@T("common.delete")"
-                      ShareSessionText="分享会话"
+                      ShareSessionText="@T("codeAssistant.shareSession")"
                       NoSessionsText="@T("codeAssistant.noSessions")"
                       CreateSessionHintText="@T("codeAssistant.createSessionHint")"
                       OnClose="ToggleSessionList"
@@ -43,7 +119,7 @@
                       OnDeleteSession="ShowDeleteDialog"
                       GetSessionItemClass="GetSessionItemClass"
                       FormatDateTime="FormatDateTime" />
-    
+
     <!-- 右侧预览区 -->
     <div id="code-assistant-preview-panel" class="flex flex-1 bg-white/60 backdrop-blur-sm p-6 flex-col overflow-hidden min-w-[420px] transition-all duration-300 relative">
         <PreviewTabsHeader ActiveTabKey="@_activeTabKey"
@@ -202,24 +278,8 @@
                        GitHubUrl="https://github.com/xuzeyu91/WebCode"
                        GitHubTitle="@T("codeAssistant.visitGitHub")"
                        GitHubText="GitHub"
-                       CurrentUsername="@_currentUsername"
-                       ShowUserDropdown="@_showUserDropdown"
-                       CurrentUserLabel="@T("codeAssistant.currentUser")"
-                       LanguageLabel="@T("codeAssistant.language")"
-                       SettingsText="@T("codeAssistant.settings")"
-                       CheckUpdateTitle="@T("version.checkUpdate")"
-                       CurrentVersion="@_currentVersion"
-                       HasUpdate="@_hasUpdate"
-                       LogoutText="@T("codeAssistant.logout")"
-                       OnToggleUserDropdown="ToggleUserDropdown"
-                       OnCloseUserDropdown="CloseUserDropdown"
-                       OnOpenEnvConfig="OpenEnvConfigFromDropdown"
-                       OnCheckForUpdate="CheckForUpdateFromDropdown"
-                       OnLogout="HandleLogoutFromDropdown">
-            <LanguageSwitcherContent>
-                <LanguageSwitcher OnLanguageChanged="OnLanguageChangedFromDropdown" />
-            </LanguageSwitcherContent>
-        </UserInfoPanel>
+                       ClearChatText="@T("codeAssistant.clearChat")"
+                       OnClearChat="ClearChat" />
         <ChatToolbarPanel SessionHistoryTitle="@T("codeAssistant.sessionHistory")"
                           SessionHistoryText="@T("codeAssistant.sessionHistory")"
                           ProjectTitle="@T("project.title")"
@@ -227,14 +287,14 @@
                           ContextTitle="@T("codeAssistant.contextManagement")"
                           ContextText="@T("codeAssistant.contextManagement")"
                           ClearChatText="@T("codeAssistant.clearChat")"
+                          ShowSessionButton="false"
+                          ShowProjectButton="false"
+                          ShowContextButton="false"
+                          ShowClearChatButton="false"
                           OnToggleSessionList="ToggleSessionList"
                           OnShowProjectManage="ShowProjectManageModal"
                           OnToggleContext="ToggleContextPanel"
-                          OnClearChat="ClearChat">
-            <LeadingContent>
-                <TemplateLibraryModal @ref="_templateLibraryModal" OnTemplateSelected="OnTemplateSelected" />
-            </LeadingContent>
-        </ChatToolbarPanel>
+                          OnClearChat="ClearChat" />
 
         <!-- 快捷操作面板 -->
         <QuickActionsPanel @ref="_quickActionsPanel" OnActionSelected="OnQuickActionSelected" />
@@ -295,9 +355,6 @@
 <!-- 代码预览模态框 -->
 @* 代码预览模态框 (已应用Tailwind样式) *@
 <CodePreviewModal @ref="_codePreviewModal" />
-
-<!-- 上下文预览面板 -->
-<ContextPreviewPanel @ref="_contextPreviewPanel" SessionId="@_sessionId" OnContextChanged="OnContextChanged" />
 
 <CreateFolderDialog Show="@_showCreateFolderDialog"
                     Title="@T("codeAssistant.createFolder")"
@@ -475,9 +532,83 @@
     {
         return FileIconHelper.GetFileIcon(extension);
     }
+
+    // SidePanel 设置内容渲染
+    private RenderFragment RenderSettingsPanel() => __builder =>
+    {
+        <div class="p-4 space-y-3">
+            <!-- 用户头像和信息 -->
+            <div class="flex items-center gap-3 px-3 py-3 bg-gray-50 rounded-lg border border-gray-100">
+                <div class="w-12 h-12 bg-gray-700 rounded-full flex items-center justify-center shadow-md flex-shrink-0">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                    </svg>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="text-xs text-gray-500 font-medium">@T("codeAssistant.currentUser")</div>
+                    <div class="text-sm font-semibold text-gray-800 truncate">@_currentUsername</div>
+                </div>
+            </div>
+            
+            <!-- 语言切换 -->
+            <div class="px-3 py-2.5 bg-white rounded-lg border border-gray-100">
+                <div class="flex items-center gap-3 mb-2">
+                    <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"></path>
+                    </svg>
+                    <div class="text-sm font-medium text-gray-700">@T("codeAssistant.language")</div>
+                </div>
+                <div class="language-switcher-container">
+                    <LanguageSwitcher OnLanguageChanged="OnLanguageChangedFromSidePanel" />
+                </div>
+            </div>
+            
+            <!-- 环境变量配置 -->
+            <button @onclick="OpenEnvConfigFromSidePanel" 
+                    class="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-100 rounded-lg transition-colors text-left">
+                <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                </svg>
+                <div class="flex-1">
+                    <div class="text-sm font-medium text-gray-700">@T("codeAssistant.settings")</div>
+                    <div class="text-xs text-gray-400">@T("settings.envConfig")</div>
+                </div>
+                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+            </button>
+            
+            <!-- 检查更新 -->
+            <button @onclick="CheckForUpdateFromSidePanel" 
+                    class="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-100 rounded-lg transition-colors text-left">
+                <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+                <div class="flex-1">
+                    <div class="text-sm font-medium text-gray-700">@T("version.checkUpdate")</div>
+                    <div class="text-xs text-gray-400">@T("version.currentVersion"): @_currentVersion</div>
+                </div>
+                @if (_hasUpdate)
+                {
+                    <span class="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">@T("version.newVersion")</span>
+                }
+            </button>
+            
+            <!-- 退出登录 -->
+            <div class="pt-3 border-t border-gray-100">
+                <button @onclick="HandleLogoutFromSidePanel" 
+                        class="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-red-50 rounded-lg transition-colors text-left">
+                    <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                    </svg>
+                    <div class="text-sm font-medium text-red-600">@T("codeAssistant.logout")</div>
+                </button>
+            </div>
+        </div>
+    };
+
 }
-
-
 
 <SessionDeleteDialog Show="@_showSessionDeleteDialog"
                      Session="@_sessionToDelete"
@@ -569,3 +700,8 @@
 
 <!-- 更新提示模态框 -->
 <UpdateNotificationModal @ref="_updateNotificationModal" />
+
+<!-- 模板库模态框（通过左侧菜单直接打开） -->
+<TemplateLibraryModal @ref="_templateLibraryModal"
+                      ShowButton="false"
+                      OnTemplateSelected="OnTemplateSelected" />

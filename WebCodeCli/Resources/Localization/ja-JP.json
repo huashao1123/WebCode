@@ -1,4 +1,15 @@
 {
+  "activityBar": {
+    "chat": "チャット",
+    "sessions": "セッション",
+    "projects": "プロジェクト",
+    "tasks": "タスク",
+    "settings": "設定"
+  },
+  "sidePanel": {
+    "tasksComingSoon": "タスク管理は近日公開",
+    "tasksComingSoonHint": "タスク管理機能をお楽しみに..."
+  },
   "common": {
     "save": "保存",
     "cancel": "キャンセル",
@@ -167,6 +178,9 @@
   },
   "version": {
     "updateTitle": "新しいバージョンがあります",
+    "checkUpdate": "更新を確認",
+    "currentVersion": "現在のバージョン",
+    "newVersion": "新しいバージョン",
     "checking": "更新を確認しています...",
     "checkFailed": "更新の確認に失敗しました",
     "current": "現在のバージョン",
@@ -177,6 +191,9 @@
     "viewUpdate": "更新を表示",
     "upToDate": "最新の状態です",
     "githubReleases": "GitHub リリース"
+  },
+  "settings": {
+    "envConfig": "環境変数の設定"
   },
   "cliEvent": {
     "title": {
@@ -296,6 +313,7 @@
     "folderDeleteWarning": "フォルダーとその内容は永久に削除されます",
     "fileDeleteWarning": "ファイルは永久に削除されます",
     "renameSession": "セッション名を変更",
+    "shareSession": "セッションを共有",
     "deleteSession": "セッションを削除",
     "deleteSessionWarning": "このセッションを削除してもよろしいですか？この操作は元に戻せません。",
     "sessionName": "セッション名",

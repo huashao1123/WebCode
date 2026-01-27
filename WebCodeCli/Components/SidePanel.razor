@@ -1,0 +1,117 @@
+@* SidePanel - 侧边面板容器，根据 ActivityBar 选中项显示不同内容 *@
+@using WebCodeCli.Domain.Domain.Model
+
+@if (Show)
+{
+        <div class="side-panel hidden lg:flex flex-col h-screen bg-white border-r border-gray-200 flex-shrink-0 overflow-hidden transition-all duration-300 ease-in-out shadow-lg"
+            style="width: @(Width)px; min-width: @(Width)px;">
+        <!-- 面板标题栏 -->
+        <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-gray-50 flex-shrink-0">
+            <h2 class="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                @GetPanelIcon()
+                <span>@GetPanelTitle()</span>
+            </h2>
+            <button @onclick="OnClose" 
+                    class="p-1.5 hover:bg-gray-200 rounded-lg transition-colors"
+                    title="@CloseText">
+                <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+
+        <!-- 面板内容区域 -->
+        <div class="flex-1 overflow-y-auto overflow-x-hidden">
+            <div @key="ActiveView">
+                @switch (ActiveView)
+                {
+                    case "sessions":
+                        @SessionsContent
+                        break;
+                    case "context":
+                        @ContextContent
+                        break;
+                    case "tasks":
+                        <div class="p-4">
+                            <div class="text-center py-12">
+                                <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+                                    </svg>
+                                </div>
+                                <p class="text-gray-500 text-sm font-medium">@TasksComingSoonText</p>
+                                <p class="text-gray-400 text-xs mt-1">@TasksComingSoonHint</p>
+                            </div>
+                        </div>
+                        break;
+                    case "settings":
+                        @SettingsContent
+                        break;
+                    default:
+                        break;
+                }
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool Show { get; set; }
+    [Parameter] public string ActiveView { get; set; } = "sessions";
+    [Parameter] public double Width { get; set; } = 280;
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    // 本地化文本
+    [Parameter] public string CloseText { get; set; } = "关闭";
+    [Parameter] public string SessionsTitle { get; set; } = "会话历史";
+    [Parameter] public string ContextTitle { get; set; } = "上下文";
+    [Parameter] public string TasksTitle { get; set; } = "任务管理";
+    [Parameter] public string SettingsTitle { get; set; } = "设置";
+    [Parameter] public string TasksComingSoonText { get; set; } = "任务管理即将推出";
+    [Parameter] public string TasksComingSoonHint { get; set; } = "敬请期待更多功能";
+
+    // 内容插槽
+    [Parameter] public RenderFragment? SessionsContent { get; set; }
+    [Parameter] public RenderFragment? ContextContent { get; set; }
+    [Parameter] public RenderFragment? SettingsContent { get; set; }
+
+    private string GetPanelTitle()
+    {
+        return ActiveView switch
+        {
+            "sessions" => SessionsTitle,
+            "context" => ContextTitle,
+            "tasks" => TasksTitle,
+            "settings" => SettingsTitle,
+            _ => ""
+        };
+    }
+
+    private RenderFragment GetPanelIcon() => __builder =>
+    {
+        switch (ActiveView)
+        {
+            case "sessions":
+                <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                break;
+            case "context":
+                <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                break;
+            case "tasks":
+                <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+                </svg>
+                break;
+            case "settings":
+                <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                </svg>
+                break;
+        }
+    };
+}

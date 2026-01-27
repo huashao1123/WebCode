@@ -234,6 +234,11 @@ public partial class CodeAssistant : ComponentBase, IAsyncDisposable
     private bool _showSessionList = false;
     private bool _isLoadingSessions = false;
     private bool _isLoadingSession = false;
+    private bool _openContextPanelOnRender = false;
+    
+    // Activity Bar 和 SidePanel 状态管理
+    private string _activeMenuItem = "chat"; // chat, sessions, projects, tasks, settings
+    private bool _showSidePanel = false;
     
     // 会话多选批量删除
     private bool _isSessionMultiSelectMode = false;
@@ -420,6 +425,12 @@ public partial class CodeAssistant : ComponentBase, IAsyncDisposable
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        if (_openContextPanelOnRender && _contextPreviewPanel != null)
+        {
+            _openContextPanelOnRender = false;
+            await OpenContextPanelFromSidePanelAsync();
+        }
+
         if (firstRender)
         {
             if (!_hasCheckedDevice)
@@ -3839,6 +3850,133 @@ public partial class CodeAssistant : ComponentBase, IAsyncDisposable
         _showSessionList = !_showSessionList;
         StateHasChanged();
     }
+
+    /// <summary>
+    /// Activity Bar 菜单项点击处理
+    /// </summary>
+    private async Task HandleMenuItemChange(string menuItem)
+    {
+        // 模板库：直接弹窗，不显示侧边栏
+        if (menuItem == "templates")
+        {
+            _activeMenuItem = "templates";
+            _showSidePanel = false;
+            StateHasChanged();
+
+            if (_templateLibraryModal != null)
+            {
+                await _templateLibraryModal.OpenModal();
+            }
+            return;
+        }
+
+        // 项目管理：直接弹窗，不显示侧边栏
+        if (menuItem == "projects")
+        {
+            _activeMenuItem = "projects";
+            _showSidePanel = false;
+            StateHasChanged();
+
+            if (_projectManageModal != null)
+            {
+                await _projectManageModal.ShowAsync();
+            }
+            return;
+        }
+
+        if (menuItem == "chat")
+        {
+            // 点击聊天图标时，隐藏侧边面板
+            _showSidePanel = false;
+            _activeMenuItem = "chat";
+        }
+        else if (_activeMenuItem == menuItem && _showSidePanel)
+        {
+            // 再次点击同一项，切换面板显示
+            _showSidePanel = false;
+        }
+        else
+        {
+            _activeMenuItem = menuItem;
+            _showSidePanel = true;
+            
+            // 如果切换到会话历史，加载会话列表
+            if (menuItem == "sessions" && !_sessions.Any())
+            {
+                _ = LoadSessionsAsync();
+            }
+
+            // 如果切换到上下文，构建并刷新上下文面板
+            if (menuItem == "context")
+            {
+                await OpenContextPanelFromSidePanelAsync();
+            }
+        }
+        StateHasChanged();
+    }
+
+    private async Task OpenContextPanelFromSidePanelAsync()
+    {
+        if (_contextPreviewPanel == null)
+        {
+            _openContextPanelOnRender = true;
+            return;
+        }
+
+        await ContextManagerService.BuildContextFromMessagesAsync(_sessionId, _messages);
+        await _contextPreviewPanel.ShowAsync(_sessionId);
+        _showContextPanel = true;
+    }
+
+    /// <summary>
+    /// 关闭侧边面板
+    /// </summary>
+    private void CloseSidePanel()
+    {
+        _showSidePanel = false;
+        _activeMenuItem = "chat";
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// 从侧边面板打开环境变量配置
+    /// </summary>
+    private async Task OpenEnvConfigFromSidePanel()
+    {
+        _showSidePanel = false;
+        StateHasChanged();
+        await OpenEnvConfig();
+    }
+
+    /// <summary>
+    /// 从侧边面板检查更新
+    /// </summary>
+    private async Task CheckForUpdateFromSidePanel()
+    {
+        _showSidePanel = false;
+        StateHasChanged();
+        await CheckForUpdate();
+    }
+
+    /// <summary>
+    /// 从侧边面板切换语言
+    /// </summary>
+    private async Task OnLanguageChangedFromSidePanel(string languageCode)
+    {
+        _showSidePanel = false;
+        StateHasChanged();
+        await OnLanguageChanged(languageCode);
+    }
+
+    /// <summary>
+    /// 从侧边面板退出登录
+    /// </summary>
+    private async Task HandleLogoutFromSidePanel()
+    {
+        _showSidePanel = false;
+        StateHasChanged();
+        await HandleLogout();
+    }
     
     /// <summary>
     /// 创建新会话（按钮点击）
@@ -5703,10 +5841,42 @@ public partial class CodeAssistant : ComponentBase, IAsyncDisposable
             await L.ReloadTranslationsAsync();
             await LoadTranslationsAsync();
             await InvokeAsync(StateHasChanged);
+            
+            // 由于使用了 @key="_currentLanguage"，DOM 会被重新创建
+            // 需要等待一帧渲染完成后重新初始化 splitter
+            await Task.Delay(50); // 等待 DOM 更新完成
+            await ReinitializeSplitterAsync();
         }
         catch (Exception ex)
         {
             Console.WriteLine($"语言切换后刷新翻译失败: {ex.Message}");
+        }
+    }
+    
+    /// <summary>
+    /// 重新初始化 PC 端左右面板拖拽分隔条
+    /// </summary>
+    private async Task ReinitializeSplitterAsync()
+    {
+        try
+        {
+            _splitterDotNetRef ??= DotNetObjectReference.Create(this);
+            await JSRuntime.InvokeVoidAsync("initCodeAssistantSplit", new
+            {
+                containerId = "code-assistant-split-container",
+                chatId = "code-assistant-chat-panel",
+                previewId = "code-assistant-preview-panel",
+                dividerId = "code-assistant-splitter",
+                minChatWidth = ChatPanelMinWidth,
+                maxChatWidth = ChatPanelMaxWidth,
+                minPreviewWidth = 420,
+                initialChatWidth = _chatPanelWidth,
+                dotNetRef = _splitterDotNetRef
+            });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"重新初始化分隔条失败: {ex.Message}");
         }
     }
 

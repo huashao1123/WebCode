@@ -947,3 +947,189 @@ pre[class*="language-"] .toolbar {
     min-height: 44px;
     contain: layout;
 }
+
+/* ====== Activity Bar 样式 - VS Code 风格 (简约大气) ====== */
+.activity-bar {
+    background-color: #333333; /* 深色背景 */
+    width: 50px; /* 固定宽度 */
+    border-right: 1px solid #252526;
+    box-shadow: none;
+    padding-top: 0;
+}
+
+.activity-bar-item {
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0; /* 直角设计 */
+    color: rgba(255, 255, 255, 0.4); /* 未选中状态颜色 */
+    transition: color 0s; /* 即时响应 */
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    position: relative;
+    box-sizing: border-box;
+}
+
+.activity-bar-item svg {
+    width: 24px !important;
+    height: 24px !important;
+}
+
+.activity-bar-item:hover {
+    color: #ffffff;
+    background: transparent;
+}
+
+.activity-bar-item.active {
+    color: #ffffff;
+    background: transparent;
+}
+
+/* 选中状态左侧指示条 */
+.activity-bar-item.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 2px;
+    height: 100%;
+    background: #ffffff; /* 白色指示条 */
+    border-radius: 0;
+    transform: none;
+}
+
+.activity-bar-item:focus {
+    outline: none; /* 移除聚焦样式 */
+    box-shadow: none;
+}
+
+/* Activity Bar 提示工具 - 深色风格 */
+.activity-bar-item[title]::after {
+    content: attr(title);
+    position: absolute;
+    left: 100%; /* 显示在右侧 */
+    top: 50%;
+    transform: translateY(-50%); /* 垂直居中 */
+    margin-left: 0px; /* 紧贴 */
+    padding: 6px 10px;
+    background: #252526;
+    color: #cccccc;
+    font-size: 12px;
+    font-weight: normal;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    border-radius: 3px;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.1s ease;
+    z-index: 9999;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    border: 1px solid #454545;
+}
+
+.activity-bar-item:hover[title]::after {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* ====== SidePanel 样式 ====== */
+.side-panel {
+    background: linear-gradient(180deg, #ffffff 0%, #fafafa 100%);
+    border-right: 1px solid #e2e8f0;
+}
+
+.side-panel-header {
+    background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+    border-bottom: 1px solid #e2e8f0;
+}
+
+/* SidePanel 滚动条 */
+.side-panel::-webkit-scrollbar {
+    width: 6px;
+}
+
+.side-panel::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.side-panel::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}
+
+.side-panel::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* SidePanel 动画 */
+@keyframes sidePanelSlideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.side-panel {
+    animation: sidePanelSlideIn 0.2s ease-out;
+}
+
+/* 响应式：平板及以上显示 Activity Bar */
+@media (min-width: 1024px) {
+    .activity-bar {
+        display: flex !important;
+    }
+    
+    .side-panel {
+        display: flex !important;
+    }
+}
+
+/* 响应式：移动端隐藏 */
+@media (max-width: 1023px) {
+    .activity-bar {
+        display: none !important;
+    }
+    
+    .side-panel {
+        display: none !important;
+    }
+}
+
+/* ====== Language Switcher 在 SidePanel 中的样式修复 ====== */
+/* 修复语言切换弹窗在 SidePanel 中展示不全的问题 */
+.language-switcher-container {
+    position: relative;
+}
+
+.language-switcher-container .relative.inline-block {
+    display: block;
+    width: 100%;
+}
+
+.language-switcher-container button {
+    width: 100%;
+    justify-content: space-between;
+}
+
+/* 确保下拉菜单可以溢出父容器 */
+.language-switcher-container .absolute {
+    position: fixed !important;
+    left: auto !important;
+    right: auto !important;
+    transform: none !important;
+    min-width: 200px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+/* 优化 SidePanel 设置面板中的语言切换器样式 */
+.side-panel .language-switcher-container .absolute {
+    z-index: 9999 !important;
+}

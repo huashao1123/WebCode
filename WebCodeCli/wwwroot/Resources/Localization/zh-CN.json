@@ -1,4 +1,15 @@
 {
+  "activityBar": {
+    "chat": "聊天",
+    "sessions": "会话",
+    "projects": "项目",
+    "tasks": "任务",
+    "settings": "设置"
+  },
+  "sidePanel": {
+    "tasksComingSoon": "任务管理即将推出",
+    "tasksComingSoonHint": "敬请期待任务管理功能..."
+  },
   "common": {
     "save": "保存",
     "cancel": "取消",
@@ -118,6 +129,9 @@
   },
   "version": {
     "updateTitle": "检查新版本",
+    "checkUpdate": "检查更新",
+    "currentVersion": "当前版本",
+    "newVersion": "有新版本",
     "checking": "正在检查更新...",
     "checkFailed": "检查更新失败",
     "current": "当前版本",
@@ -128,6 +142,9 @@
     "viewUpdate": "查看更新",
     "upToDate": "已是最新版本",
     "githubReleases": "GitHub 发布页"
+  },
+  "settings": {
+    "envConfig": "环境变量配置"
   },
   "cliEvent": {
     "title": {
@@ -249,6 +266,7 @@
     "folderDeleteWarning": "文件夹及其所有内容将被永久删除",
     "fileDeleteWarning": "文件将被永久删除",
     "renameSession": "重命名会话",
+    "shareSession": "分享会话",
     "deleteSession": "删除会话",
     "deleteSessionWarning": "确定要删除此会话吗？此操作无法撤销。",
     "sessionName": "会话名称",

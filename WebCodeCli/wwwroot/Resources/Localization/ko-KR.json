@@ -1,4 +1,15 @@
 {
+  "activityBar": {
+    "chat": "채팅",
+    "sessions": "세션",
+    "projects": "프로젝트",
+    "tasks": "작업",
+    "settings": "설정"
+  },
+  "sidePanel": {
+    "tasksComingSoon": "작업 관리 곧 출시 예정",
+    "tasksComingSoonHint": "작업 관리 기능을 기대해 주세요..."
+  },
   "common": {
     "save": "저장",
     "cancel": "취소",
@@ -167,6 +178,9 @@
   },
   "version": {
     "updateTitle": "새 버전이 있습니다",
+    "checkUpdate": "업데이트 확인",
+    "currentVersion": "현재 버전",
+    "newVersion": "새 버전",
     "checking": "업데이트를 확인하는 중...",
     "checkFailed": "업데이트 확인에 실패했습니다",
     "current": "현재 버전",
@@ -177,6 +191,9 @@
     "viewUpdate": "업데이트 보기",
     "upToDate": "최신 상태입니다",
     "githubReleases": "GitHub 릴리스"
+  },
+  "settings": {
+    "envConfig": "환경 변수 설정"
   },
   "cliEvent": {
     "title": {
@@ -296,6 +313,7 @@
     "folderDeleteWarning": "폴더와 그 안의 모든 내용이 영구적으로 삭제됩니다",
     "fileDeleteWarning": "파일이 영구적으로 삭제됩니다",
     "renameSession": "세션 이름 변경",
+    "shareSession": "세션 공유",
     "deleteSession": "세션 삭제",
     "deleteSessionWarning": "이 세션을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.",
     "sessionName": "세션 이름",
