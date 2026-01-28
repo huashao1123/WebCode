@@ -490,8 +490,8 @@
     {
         try
         {
-            // 使用项目中已有的 copyToClipboard 辅助函数，它有回退方案
-            var success = await JSRuntime.InvokeAsync<bool>("databaseChatFunctions.copyToClipboard", _fileContent);
+            // 使用统一的剪贴板函数（含回退方案）
+            var success = await JSRuntime.InvokeAsync<bool>("clipboardCopy.copyText", _fileContent);
             if (success)
             {
                 _copied = true;

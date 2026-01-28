@@ -1,0 +1,447 @@
+@* ScheduledTaskDialog - 创建/编辑定时任务对话框 *@
+@using WebCodeCli.Domain.Repositories.Base.ScheduledTask
+@using WebCodeCli.Domain.Domain.Service
+@using System.Net.Http.Json
+@inject HttpClient Http
+@inject ILogger<ScheduledTaskDialog> Logger
+
+<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+        <!-- 标题栏 -->
+        <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between bg-gray-50">
+            <h2 class="text-lg font-semibold text-gray-800">
+                @(IsEdit ? EditTitleText : CreateTitleText)
+            </h2>
+            <button @onclick="OnCancel" class="p-2 hover:bg-gray-200 rounded-lg transition-colors">
+                <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+        
+        <!-- 表单内容 -->
+        <div class="flex-1 overflow-y-auto p-6 space-y-5">
+            <!-- 任务名称 -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">
+                    @NameLabelText <span class="text-red-500">*</span>
+                </label>
+                <input type="text" @bind="FormData.Name" @bind:event="oninput"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all"
+                       placeholder="@NamePlaceholderText" />
+            </div>
+            
+            <!-- 描述 -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">@DescriptionLabelText</label>
+                <input type="text" @bind="FormData.Description" @bind:event="oninput"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all"
+                       placeholder="@DescriptionPlaceholderText" />
+            </div>
+            
+            <!-- CLI 工具 -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">
+                    @ToolLabelText <span class="text-red-500">*</span>
+                </label>
+                <select @bind="FormData.ToolId"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all">
+                    <option value="">@SelectToolText</option>
+                    @foreach (var tool in AvailableTools)
+                    {
+                        <option value="@tool.Id">@tool.DisplayName</option>
+                    }
+                </select>
+            </div>
+            
+            <!-- 执行提示词 -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">
+                    @PromptLabelText <span class="text-red-500">*</span>
+                </label>
+                <textarea @bind="FormData.Prompt" @bind:event="oninput" rows="4"
+                          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all resize-none"
+                          placeholder="@PromptPlaceholderText"></textarea>
+            </div>
+            
+            <!-- 目标会话 -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">@SessionLabelText</label>
+                <select @bind="FormData.SessionId"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all">
+                    <option value="">@NewSessionText</option>
+                    @foreach (var session in AvailableSessions)
+                    {
+                        <option value="@session.Id">@session.Title</option>
+                    }
+                </select>
+                <p class="mt-1 text-xs text-gray-500">@SessionHintText</p>
+            </div>
+            
+            <!-- Cron 表达式 -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">
+                    @CronLabelText <span class="text-red-500">*</span>
+                </label>
+                <div class="flex gap-2 mb-2">
+                    <select @onchange="OnCronPresetChange"
+                            class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all">
+                        <option value="">@SelectPresetText</option>
+                        @foreach (var preset in CronPresets)
+                        {
+                            <option value="@preset.Expression">@preset.Name - @preset.Description</option>
+                        }
+                    </select>
+                </div>
+                <div class="flex gap-2">
+                    <input type="text" @bind="FormData.CronExpression" @bind:event="oninput" @onblur="ValidateCron"
+                           class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all font-mono"
+                           placeholder="0 0 * * * ?" />
+                    <button @onclick="ValidateCron" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors text-sm">
+                        @ValidateText
+                    </button>
+                </div>
+                @if (CronValidationMessage != null)
+                {
+                    <p class="mt-1.5 text-xs @(IsCronValid ? "text-green-600" : "text-red-600")">
+                        @CronValidationMessage
+                    </p>
+                }
+                @if (NextFireTimes.Count > 0)
+                {
+                    <div class="mt-2 p-3 bg-gray-50 rounded-lg">
+                        <p class="text-xs font-medium text-gray-600 mb-1">@NextRunTimesText</p>
+                        <div class="space-y-0.5">
+                            @foreach (var time in NextFireTimes.Take(3))
+                            {
+                                <p class="text-xs text-gray-500">@time.ToString("yyyy-MM-dd HH:mm:ss")</p>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+            
+            <!-- 高级设置 -->
+            <div class="border-t border-gray-200 pt-4">
+                <button @onclick="ToggleAdvanced" class="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800 transition-colors">
+                    <svg class="w-4 h-4 transform transition-transform @(ShowAdvanced ? "rotate-90" : "")" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                    </svg>
+                    @AdvancedSettingsText
+                </button>
+                
+                @if (ShowAdvanced)
+                {
+                    <div class="mt-4 space-y-4">
+                        <!-- 超时时间 -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1.5">@TimeoutLabelText</label>
+                            <div class="flex items-center gap-2">
+                                <input type="number" @bind="FormData.TimeoutSeconds" min="60" max="86400"
+                                       class="w-32 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all" />
+                                <span class="text-sm text-gray-500">@SecondsText</span>
+                            </div>
+                            <p class="mt-1 text-xs text-gray-500">@TimeoutHintText</p>
+                        </div>
+                        
+                        <!-- 重试次数 -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1.5">@RetryLabelText</label>
+                            <input type="number" @bind="FormData.MaxRetries" min="0" max="5"
+                                   class="w-32 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all" />
+                            <p class="mt-1 text-xs text-gray-500">@RetryHintText</p>
+                        </div>
+                    </div>
+                }
+            </div>
+            
+            <!-- 启用开关 -->
+            <div class="flex items-center justify-between py-3 border-t border-gray-200">
+                <div>
+                    <p class="text-sm font-medium text-gray-700">@EnabledLabelText</p>
+                    <p class="text-xs text-gray-500">@EnabledHintText</p>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" @bind="FormData.IsEnabled" class="sr-only peer" />
+                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-gray-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gray-800"></div>
+                </label>
+            </div>
+        </div>
+        
+        <!-- 错误消息 -->
+        @if (!string.IsNullOrEmpty(ErrorMessage))
+        {
+            <div class="px-6 py-3 bg-red-50 border-t border-red-100">
+                <p class="text-sm text-red-600">@ErrorMessage</p>
+            </div>
+        }
+        
+        <!-- 底部按钮 -->
+        <div class="px-6 py-4 border-t border-gray-200 flex justify-end gap-3 bg-gray-50">
+            <button @onclick="OnCancel" 
+                    class="px-5 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors text-gray-700">
+                @CancelText
+            </button>
+            <button @onclick="HandleSubmit" 
+                    disabled="@IsSaving"
+                    class="px-5 py-2.5 bg-gray-800 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2">
+                @if (IsSaving)
+                {
+                    <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                }
+                @(IsEdit ? SaveText : CreateText)
+            </button>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public bool IsEdit { get; set; }
+    [Parameter] public ScheduledTaskEntity? Task { get; set; }
+    [Parameter] public List<ScheduledTaskPanel.ToolOption> AvailableTools { get; set; } = new();
+    [Parameter] public List<ScheduledTaskPanel.SessionOption> AvailableSessions { get; set; } = new();
+    [Parameter] public EventCallback<ScheduledTaskEntity> OnSave { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+    
+    // 本地化文本
+    [Parameter] public string CreateTitleText { get; set; } = "创建定时任务";
+    [Parameter] public string EditTitleText { get; set; } = "编辑定时任务";
+    [Parameter] public string NameLabelText { get; set; } = "任务名称";
+    [Parameter] public string NamePlaceholderText { get; set; } = "请输入任务名称";
+    [Parameter] public string DescriptionLabelText { get; set; } = "描述";
+    [Parameter] public string DescriptionPlaceholderText { get; set; } = "请输入任务描述（可选）";
+    [Parameter] public string ToolLabelText { get; set; } = "CLI 工具";
+    [Parameter] public string SelectToolText { get; set; } = "请选择 CLI 工具";
+    [Parameter] public string PromptLabelText { get; set; } = "执行提示词";
+    [Parameter] public string PromptPlaceholderText { get; set; } = "请输入要执行的提示词...";
+    [Parameter] public string SessionLabelText { get; set; } = "目标会话";
+    [Parameter] public string NewSessionText { get; set; } = "创建新会话";
+    [Parameter] public string SessionHintText { get; set; } = "选择一个现有会话，或创建新会话执行任务";
+    [Parameter] public string CronLabelText { get; set; } = "Cron 表达式";
+    [Parameter] public string SelectPresetText { get; set; } = "选择预设...";
+    [Parameter] public string ValidateText { get; set; } = "验证";
+    [Parameter] public string NextRunTimesText { get; set; } = "接下来的执行时间：";
+    [Parameter] public string AdvancedSettingsText { get; set; } = "高级设置";
+    [Parameter] public string TimeoutLabelText { get; set; } = "执行超时";
+    [Parameter] public string SecondsText { get; set; } = "秒";
+    [Parameter] public string TimeoutHintText { get; set; } = "任务执行的最大时间，超时将自动终止（60-86400秒）";
+    [Parameter] public string RetryLabelText { get; set; } = "最大重试次数";
+    [Parameter] public string RetryHintText { get; set; } = "任务失败后的重试次数（0-5次）";
+    [Parameter] public string EnabledLabelText { get; set; } = "启用任务";
+    [Parameter] public string EnabledHintText { get; set; } = "启用后任务将按计划自动执行";
+    [Parameter] public string CancelText { get; set; } = "取消";
+    [Parameter] public string SaveText { get; set; } = "保存";
+    [Parameter] public string CreateText { get; set; } = "创建";
+    [Parameter] public string CronValidText { get; set; } = "Cron 表达式有效";
+    [Parameter] public string CronInvalidText { get; set; } = "无效的 Cron 表达式";
+    [Parameter] public string CronValidateFailedText { get; set; } = "验证失败";
+    [Parameter] public string ErrorNameRequiredText { get; set; } = "请输入任务名称";
+    [Parameter] public string ErrorToolRequiredText { get; set; } = "请选择 CLI 工具";
+    [Parameter] public string ErrorPromptRequiredText { get; set; } = "请输入执行提示词";
+    [Parameter] public string ErrorCronRequiredText { get; set; } = "请输入 Cron 表达式";
+    [Parameter] public string ErrorCronInvalidText { get; set; } = "Cron 表达式无效";
+    [Parameter] public string SaveFailedText { get; set; } = "保存失败";
+    [Parameter] public string SaveFailedWithMessageText { get; set; } = "保存失败: {0}";
+    
+    // 表单数据
+    private TaskFormData FormData { get; set; } = new();
+    private List<CronPreset> CronPresets { get; set; } = new();
+    private List<DateTime> NextFireTimes { get; set; } = new();
+    private bool IsCronValid { get; set; }
+    private string? CronValidationMessage { get; set; }
+    private bool ShowAdvanced { get; set; }
+    private bool IsSaving { get; set; }
+    private string? ErrorMessage { get; set; }
+    
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCronPresetsAsync();
+        
+        if (IsEdit && Task != null)
+        {
+            FormData = new TaskFormData
+            {
+                Name = Task.Name,
+                Description = Task.Description,
+                CronExpression = Task.CronExpression,
+                ToolId = Task.ToolId,
+                Prompt = Task.Prompt,
+                SessionId = Task.SessionId,
+                TimeoutSeconds = Task.TimeoutSeconds,
+                MaxRetries = Task.MaxRetries,
+                IsEnabled = Task.IsEnabled
+            };
+            
+            await ValidateCron();
+        }
+    }
+    
+    private async Task LoadCronPresetsAsync()
+    {
+        try
+        {
+            var response = await Http.GetAsync("api/scheduled-task/cron-presets");
+            if (response.IsSuccessStatusCode)
+            {
+                CronPresets = await response.Content.ReadFromJsonAsync<List<CronPreset>>() ?? new();
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "加载 Cron 预设失败");
+        }
+    }
+    
+    private void OnCronPresetChange(ChangeEventArgs e)
+    {
+        var value = e.Value?.ToString();
+        if (!string.IsNullOrEmpty(value))
+        {
+            FormData.CronExpression = value;
+            _ = ValidateCron();
+        }
+    }
+    
+    private async Task ValidateCron()
+    {
+        if (string.IsNullOrWhiteSpace(FormData.CronExpression))
+        {
+            IsCronValid = false;
+            CronValidationMessage = null;
+            NextFireTimes.Clear();
+            return;
+        }
+        
+        try
+        {
+            var response = await Http.PostAsJsonAsync("api/scheduled-task/validate-cron", new { CronExpression = FormData.CronExpression });
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<CronValidationResult>();
+                IsCronValid = result?.IsValid ?? false;
+                CronValidationMessage = IsCronValid ? CronValidText : result?.Error ?? CronInvalidText;
+                NextFireTimes = result?.NextFireTimes ?? new();
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "验证 Cron 表达式失败");
+            IsCronValid = false;
+            CronValidationMessage = CronValidateFailedText;
+        }
+        
+        StateHasChanged();
+    }
+    
+    private void ToggleAdvanced()
+    {
+        ShowAdvanced = !ShowAdvanced;
+    }
+    
+    private async Task HandleSubmit()
+    {
+        ErrorMessage = null;
+        
+        // 基本验证
+        if (string.IsNullOrWhiteSpace(FormData.Name))
+        {
+            ErrorMessage = ErrorNameRequiredText;
+            return;
+        }
+        
+        if (string.IsNullOrWhiteSpace(FormData.ToolId))
+        {
+            ErrorMessage = ErrorToolRequiredText;
+            return;
+        }
+        
+        if (string.IsNullOrWhiteSpace(FormData.Prompt))
+        {
+            ErrorMessage = ErrorPromptRequiredText;
+            return;
+        }
+        
+        if (string.IsNullOrWhiteSpace(FormData.CronExpression))
+        {
+            ErrorMessage = ErrorCronRequiredText;
+            return;
+        }
+        
+        if (!IsCronValid)
+        {
+            await ValidateCron();
+            if (!IsCronValid)
+            {
+                ErrorMessage = ErrorCronInvalidText;
+                return;
+            }
+        }
+        
+        IsSaving = true;
+        StateHasChanged();
+        
+        try
+        {
+            HttpResponseMessage response;
+            
+            if (IsEdit && Task != null)
+            {
+                response = await Http.PutAsJsonAsync($"api/scheduled-task/{Task.Id}", FormData);
+            }
+            else
+            {
+                response = await Http.PostAsJsonAsync("api/scheduled-task", FormData);
+            }
+            
+            if (response.IsSuccessStatusCode)
+            {
+                var savedTask = await response.Content.ReadFromJsonAsync<ScheduledTaskEntity>();
+                if (savedTask != null || IsEdit)
+                {
+                    await OnSave.InvokeAsync(savedTask ?? Task);
+                }
+            }
+            else
+            {
+                var error = await response.Content.ReadFromJsonAsync<ErrorResponse>();
+                ErrorMessage = error?.Error ?? SaveFailedText;
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "保存任务失败");
+            ErrorMessage = string.Format(SaveFailedWithMessageText, ex.Message);
+        }
+        finally
+        {
+            IsSaving = false;
+            StateHasChanged();
+        }
+    }
+    
+    // 表单数据模型
+    public class TaskFormData
+    {
+        public string Name { get; set; } = string.Empty;
+        public string? Description { get; set; }
+        public string CronExpression { get; set; } = string.Empty;
+        public string ToolId { get; set; } = string.Empty;
+        public string Prompt { get; set; } = string.Empty;
+        public string? SessionId { get; set; }
+        public int TimeoutSeconds { get; set; } = 3600;
+        public int MaxRetries { get; set; } = 0;
+        public bool IsEnabled { get; set; } = true;
+    }
+    
+    public class CronValidationResult
+    {
+        public bool IsValid { get; set; }
+        public string? Error { get; set; }
+        public List<DateTime> NextFireTimes { get; set; } = new();
+    }
+    
+    public class ErrorResponse
+    {
+        public string? Error { get; set; }
+    }
+}

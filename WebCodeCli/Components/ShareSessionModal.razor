@@ -402,6 +402,10 @@
         _isVisible = true;
         _activeTab = "create";
         ResetForm();
+        
+        // 每次显示时重新加载翻译，确保语言切换后显示正确
+        await LoadTranslationsAsync();
+        
         StateHasChanged();
         
         await LoadExistingShares();
@@ -592,7 +596,7 @@
     {
         if (_createdShare != null)
         {
-            await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", _createdShare.ShareUrl);
+            await JSRuntime.InvokeAsync<bool>("clipboardCopy.copyText", _createdShare.ShareUrl);
             _copied = true;
             StateHasChanged();
 
@@ -604,7 +608,7 @@
 
     private async Task CopyShareUrlByCode(string url)
     {
-        await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", url);
+        await JSRuntime.InvokeAsync<bool>("clipboardCopy.copyText", url);
     }
 
     private async Task DeleteShare(string shareCode)

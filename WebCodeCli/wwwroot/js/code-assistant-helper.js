@@ -1,5 +1,40 @@
 // 编程助手页面辅助函数
 
+// 统一剪贴板复制（带回退方案）
+window.clipboardCopy = {
+    copyText: async function (text) {
+        if (!text) return false;
+
+        try {
+            // 尝试使用异步剪贴板 API（需要安全上下文）
+            if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(text);
+                return true;
+            }
+        } catch (e) {
+            console.warn('Clipboard API 复制失败，尝试回退方案:', e);
+        }
+
+        // 回退方案：execCommand
+        try {
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-999999px';
+            textArea.style.top = '-999999px';
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            const successful = document.execCommand('copy');
+            document.body.removeChild(textArea);
+            return successful;
+        } catch (err) {
+            console.error('回退复制失败:', err);
+            return false;
+        }
+    }
+};
+
 // 滚动输出容器到底部
 window.scrollOutputToBottom = function() {
     requestAnimationFrame(() => {

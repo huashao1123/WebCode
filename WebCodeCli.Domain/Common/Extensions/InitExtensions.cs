@@ -102,6 +102,18 @@ namespace WebCodeCli.Domain.Common.Extensions
                 {
                     Console.WriteLine($"初始化项目管理表失败: {ex.Message}");
                 }
+                
+                // 初始化定时任务相关表和索引
+                try
+                {
+                    Console.WriteLine("开始初始化定时任务表...");
+                    _repository.GetDB().InitializeScheduledTaskTables();
+                    Console.WriteLine("定时任务表初始化成功");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"初始化定时任务表失败: {ex.Message}");
+                }
             }
         }
 

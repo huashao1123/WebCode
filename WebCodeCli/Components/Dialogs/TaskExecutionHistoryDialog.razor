@@ -1,0 +1,1011 @@
+@* TaskExecutionHistoryDialog - 任务执行历史对话框 *@
+@namespace WebCodeCli.Components.Dialogs
+@using WebCodeCli.Domain.Repositories.Base.ScheduledTask
+@using WebCodeCli.Domain.Domain.Model
+@using System.Net.Http.Json
+@using System.Text.Json
+@inject HttpClient Http
+@inject ILogger<TaskExecutionHistoryDialog> Logger
+@inject IJSRuntime JSRuntime
+
+<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-xl shadow-2xl max-w-5xl w-[90vw] h-[92vh] max-h-[92vh] overflow-hidden flex flex-col">
+        <!-- 标题栏 -->
+        <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between bg-gray-50">
+            <div>
+                <h2 class="text-lg font-semibold text-gray-800">@TitleText</h2>
+                @if (Task != null)
+                {
+                    <p class="text-sm text-gray-500 mt-0.5">@Task.Name</p>
+                }
+            </div>
+            <button @onclick="OnClose" class="p-2 hover:bg-gray-200 rounded-lg transition-colors">
+                <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+        
+        <!-- 内容区域 -->
+        <div class="flex-1 overflow-hidden flex min-h-0">
+            <!-- 执行列表 -->
+            <div class="w-80 border-r border-gray-200 flex flex-col bg-gray-50 min-h-0">
+                <div class="p-3 border-b border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm font-medium text-gray-700">@ExecutionListText</span>
+                        <button @onclick="RefreshExecutions" class="p-1.5 hover:bg-gray-200 rounded transition-colors" title="@RefreshText">
+                            <svg class="w-4 h-4 text-gray-600 @(IsLoading ? "animate-spin" : "")" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="flex-1 overflow-y-auto">
+                    @if (IsLoading)
+                    {
+                        <div class="p-8 text-center">
+                            <div class="inline-block animate-spin rounded-full h-6 w-6 border-2 border-gray-300 border-t-gray-700"></div>
+                        </div>
+                    }
+                    else if (Executions.Count == 0)
+                    {
+                        <div class="p-8 text-center text-gray-500 text-sm">@NoExecutionsText</div>
+                    }
+                    else
+                    {
+                        <div class="divide-y divide-gray-200">
+                            @foreach (var execution in Executions)
+                            {
+                                <div class="p-3 cursor-pointer hover:bg-white transition-colors @(SelectedExecution?.Id == execution.Id ? "bg-white border-l-2 border-gray-800" : "")"
+                                     @onclick="() => SelectExecution(execution)">
+                                    <div class="flex items-center justify-between mb-1">
+                                        <span class="text-xs text-gray-500">@execution.StartTime.ToString("MM-dd HH:mm:ss")</span>
+                                        @switch (execution.Status)
+                                        {
+                                            case "Success":
+                                                <span class="px-1.5 py-0.5 text-xs bg-green-100 text-green-700 rounded">@SuccessText</span>
+                                                break;
+                                            case "Failed":
+                                                <span class="px-1.5 py-0.5 text-xs bg-red-100 text-red-700 rounded">@FailedText</span>
+                                                break;
+                                            case "Running":
+                                                <span class="px-1.5 py-0.5 text-xs bg-blue-100 text-blue-700 rounded flex items-center gap-1">
+                                                    <div class="w-2 h-2 animate-spin rounded-full border border-blue-400 border-t-blue-700"></div>
+                                                    @RunningText
+                                                </span>
+                                                break;
+                                            case "Timeout":
+                                                <span class="px-1.5 py-0.5 text-xs bg-yellow-100 text-yellow-700 rounded">@TimeoutText</span>
+                                                break;
+                                            case "Cancelled":
+                                                <span class="px-1.5 py-0.5 text-xs bg-gray-100 text-gray-600 rounded">@CancelledText</span>
+                                                break;
+                                            default:
+                                                <span class="px-1.5 py-0.5 text-xs bg-gray-100 text-gray-600 rounded">@execution.Status</span>
+                                                break;
+                                        }
+                                    </div>
+                                    <div class="flex items-center gap-3 text-xs text-gray-500">
+                                        @if (execution.DurationMs.HasValue)
+                                        {
+                                            <span>@FormatDuration(execution.DurationMs.Value)</span>
+                                        }
+                                        <span class="px-1.5 py-0.5 bg-gray-100 rounded">@(execution.TriggerType == "Manual" ? ManualText : ScheduledText)</span>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+            
+            <!-- 执行详情 -->
+            <div class="flex-1 flex flex-col overflow-hidden min-h-0">
+                @if (SelectedExecution != null)
+                {
+                    <!-- 详情头部 -->
+                    <div class="p-4 border-b border-gray-200 bg-gray-50">
+                        <div class="flex items-center justify-between mb-2">
+                            <h3 class="font-medium text-gray-800">@ExecutionDetailsText</h3>
+                            @if (SelectedExecution.Status == "Running" || SelectedExecution.Status == "Pending")
+                            {
+                                <button @onclick="CancelExecution" class="px-3 py-1.5 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors">
+                                    @CancelExecutionText
+                                </button>
+                            }
+                        </div>
+                        <div class="grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                                <span class="text-gray-500">@StartTimeText:</span>
+                                <span class="ml-2 text-gray-800">@SelectedExecution.StartTime.ToString("yyyy-MM-dd HH:mm:ss")</span>
+                            </div>
+                            @if (SelectedExecution.EndTime.HasValue)
+                            {
+                                <div>
+                                    <span class="text-gray-500">@EndTimeText:</span>
+                                    <span class="ml-2 text-gray-800">@SelectedExecution.EndTime.Value.ToString("yyyy-MM-dd HH:mm:ss")</span>
+                                </div>
+                            }
+                            @if (SelectedExecution.DurationMs.HasValue)
+                            {
+                                <div>
+                                    <span class="text-gray-500">@DurationText:</span>
+                                    <span class="ml-2 text-gray-800">@FormatDuration(SelectedExecution.DurationMs.Value)</span>
+                                </div>
+                            }
+                            <div>
+                                <span class="text-gray-500">@TriggerTypeText:</span>
+                                <span class="ml-2 text-gray-800">@(SelectedExecution.TriggerType == "Manual" ? ManualText : ScheduledText)</span>
+                            </div>
+                        </div>
+                        @if (!string.IsNullOrEmpty(SelectedExecution.ErrorMessage))
+                        {
+                            <div class="mt-3 p-2 bg-red-50 border border-red-100 rounded text-sm text-red-700">
+                                <span class="font-medium">@ErrorText:</span> @SelectedExecution.ErrorMessage
+                            </div>
+                        }
+                    </div>
+                    
+                    <!-- 输出内容 -->
+                    <div class="flex-1 overflow-hidden flex flex-col min-h-0">
+                        <div class="px-4 py-2 border-b border-gray-200 flex items-center justify-between bg-gray-50">
+                            <span class="text-sm font-medium text-gray-700">@OutputText</span>
+                            <div class="flex items-center gap-2">
+                                <button @onclick="CopyOutput" class="p-1.5 hover:bg-gray-200 rounded transition-colors" title="@CopyText">
+                                    <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                                    </svg>
+                                </button>
+                                @if (_copied)
+                                {
+                                    <span class="text-xs text-green-600">已复制</span>
+                                }
+                                else if (!string.IsNullOrEmpty(_copyError))
+                                {
+                                    <span class="text-xs text-red-600">@_copyError</span>
+                                }
+                                <button @onclick="ToggleDisplayMode" 
+                                        class="p-1.5 hover:bg-gray-200 rounded transition-colors flex items-center gap-1 text-xs text-gray-600"
+                                        title="@(UseRichDisplay ? "切换到原始输出" : "切换到富文本显示")">
+                                    @if (UseRichDisplay)
+                                    {
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
+                                        </svg>
+                                        <span>原始</span>
+                                    }
+                                    else
+                                    {
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                        </svg>
+                                        <span>富文本</span>
+                                    }
+                                </button>
+                            </div>
+                        </div>
+                        <div class="flex-1 overflow-hidden min-h-0">
+                            @if (UseRichDisplay)
+                            {
+                                @* 使用 OutputResultPanel 组件显示富文本输出 *@
+                                <div class="h-full overflow-auto">
+                                    <OutputResultPanel 
+                                        ContainerId="@($"execution-output-{SelectedExecution.Id}")"
+                                        HasOutputEvents="@(ParsedEventGroups.Count > 0)"
+                                        EventGroups="@ParsedEventGroups"
+                                        RawOutput="@(ParsedEventGroups.Count == 0 ? SelectedExecution.Output ?? "" : "")"
+                                        EmptyTitle="@NoOutputText"
+                                        EmptyDescription=""
+                                        IsGroupOpenFunc="@IsGroupOpen"
+                                        OnToggleGroupCallback="@OnToggleGroup" />
+                                </div>
+                            }
+                            else
+                            {
+                                @* 原始输出显示 *@
+                                <div class="h-full overflow-auto p-4 bg-gray-900">
+                                    <pre class="text-sm text-gray-100 font-mono whitespace-pre-wrap break-all">@(SelectedExecution.Output ?? NoOutputText)</pre>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="flex-1 flex items-center justify-center text-gray-500">
+                        <div class="text-center">
+                            <svg class="w-12 h-12 mx-auto text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                            </svg>
+                            <p class="text-sm">@SelectExecutionHintText</p>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public ScheduledTaskEntity? Task { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    
+    // 本地化文本
+    [Parameter] public string TitleText { get; set; } = "执行历史";
+    [Parameter] public string ExecutionListText { get; set; } = "执行记录";
+    [Parameter] public string RefreshText { get; set; } = "刷新";
+    [Parameter] public string NoExecutionsText { get; set; } = "暂无执行记录";
+    [Parameter] public string SuccessText { get; set; } = "成功";
+    [Parameter] public string FailedText { get; set; } = "失败";
+    [Parameter] public string RunningText { get; set; } = "执行中";
+    [Parameter] public string TimeoutText { get; set; } = "超时";
+    [Parameter] public string CancelledText { get; set; } = "已取消";
+    [Parameter] public string ManualText { get; set; } = "手动";
+    [Parameter] public string ScheduledText { get; set; } = "定时";
+    [Parameter] public string ExecutionDetailsText { get; set; } = "执行详情";
+    [Parameter] public string CancelExecutionText { get; set; } = "取消执行";
+    [Parameter] public string StartTimeText { get; set; } = "开始时间";
+    [Parameter] public string EndTimeText { get; set; } = "结束时间";
+    [Parameter] public string DurationText { get; set; } = "耗时";
+    [Parameter] public string TriggerTypeText { get; set; } = "触发方式";
+    [Parameter] public string ErrorText { get; set; } = "错误";
+    [Parameter] public string OutputText { get; set; } = "输出";
+    [Parameter] public string CopyText { get; set; } = "复制";
+    [Parameter] public string WrapTextText { get; set; } = "自动换行";
+    [Parameter] public string NoOutputText { get; set; } = "(无输出)";
+    [Parameter] public string SelectExecutionHintText { get; set; } = "请从左侧选择一条执行记录";
+    
+    // 状态
+    private List<TaskExecutionEntity> Executions { get; set; } = new();
+    private TaskExecutionEntity? SelectedExecution { get; set; }
+    private bool IsLoading { get; set; }
+    private bool UseRichDisplay { get; set; } = true;
+    private List<OutputEventGroup> ParsedEventGroups { get; set; } = new();
+    private HashSet<string> OpenGroupIds { get; set; } = new();
+    private bool _copied;
+    private string _copyError = string.Empty;
+    
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadExecutionsAsync();
+    }
+    
+    private async Task LoadExecutionsAsync()
+    {
+        if (Task == null) return;
+        
+        IsLoading = true;
+        StateHasChanged();
+        
+        try
+        {
+            var response = await Http.GetAsync($"api/scheduled-task/{Task.Id}/executions?limit=100");
+            if (response.IsSuccessStatusCode)
+            {
+                Executions = await response.Content.ReadFromJsonAsync<List<TaskExecutionEntity>>() ?? new();
+                
+                // 自动选择第一条记录
+                if (Executions.Count > 0 && SelectedExecution == null)
+                {
+                    await SelectExecution(Executions[0]);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "加载执行记录失败");
+        }
+        finally
+        {
+            IsLoading = false;
+            StateHasChanged();
+        }
+    }
+    
+    private async Task RefreshExecutions()
+    {
+        await LoadExecutionsAsync();
+    }
+    
+    private async Task SelectExecution(TaskExecutionEntity execution)
+    {
+        SelectedExecution = execution;
+        
+        // 如果输出为空或者是正在运行的任务，重新获取详情
+        if (string.IsNullOrEmpty(execution.Output) || execution.Status == "Running")
+        {
+            try
+            {
+                var response = await Http.GetAsync($"api/scheduled-task/executions/{execution.Id}");
+                if (response.IsSuccessStatusCode)
+                {
+                    var detail = await response.Content.ReadFromJsonAsync<TaskExecutionEntity>();
+                    if (detail != null)
+                    {
+                        SelectedExecution = detail;
+                        
+                        // 更新列表中的记录
+                        var index = Executions.FindIndex(e => e.Id == execution.Id);
+                        if (index >= 0)
+                        {
+                            Executions[index] = detail;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "获取执行详情失败");
+            }
+        }
+        
+        // 解析输出内容为事件组
+        ParseOutputToEventGroups(SelectedExecution?.Output);
+        
+        StateHasChanged();
+    }
+    
+    private async Task CancelExecution()
+    {
+        if (SelectedExecution == null) return;
+        
+        try
+        {
+            var response = await Http.PostAsync($"api/scheduled-task/executions/{SelectedExecution.Id}/cancel", null);
+            if (response.IsSuccessStatusCode)
+            {
+                await LoadExecutionsAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "取消执行失败");
+        }
+    }
+    
+    private async Task CopyOutput()
+    {
+        var content = BuildCopyContent();
+        if (string.IsNullOrWhiteSpace(content))
+        {
+            _copyError = "无可复制内容";
+            _copied = false;
+            StateHasChanged();
+            return;
+        }
+
+        try
+        {
+            // 使用统一的剪贴板函数（含回退方案）
+            var success = await JSRuntime.InvokeAsync<bool>("clipboardCopy.copyText", content);
+            if (!success)
+            {
+                _copyError = "复制失败";
+                _copied = false;
+                Logger.LogWarning("复制输出失败：剪贴板操作返回 false");
+                StateHasChanged();
+                return;
+            }
+
+            _copyError = string.Empty;
+            _copied = true;
+            StateHasChanged();
+
+            await System.Threading.Tasks.Task.Delay(1500);
+            _copied = false;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            _copyError = "复制失败";
+            _copied = false;
+            Logger.LogError(ex, "复制输出失败");
+            StateHasChanged();
+        }
+    }
+
+    private string BuildCopyContent()
+    {
+        if (!string.IsNullOrWhiteSpace(SelectedExecution?.Output))
+        {
+            return SelectedExecution.Output!;
+        }
+
+        if (ParsedEventGroups.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        var sb = new System.Text.StringBuilder();
+        foreach (var group in ParsedEventGroups)
+        {
+            if (!string.IsNullOrWhiteSpace(group.Title))
+            {
+                sb.AppendLine($"[{group.Title}]");
+            }
+
+            foreach (var item in group.Items)
+            {
+                if (!string.IsNullOrWhiteSpace(item.Content))
+                {
+                    sb.AppendLine(item.Content);
+                    sb.AppendLine();
+                }
+            }
+        }
+
+        return sb.ToString().TrimEnd();
+    }
+    
+    private void ToggleDisplayMode()
+    {
+        UseRichDisplay = !UseRichDisplay;
+    }
+    
+    private bool IsGroupOpen(OutputEventGroup group)
+    {
+        return OpenGroupIds.Contains(group.Id) || !group.IsCompleted;
+    }
+    
+    private System.Threading.Tasks.Task OnToggleGroup((string groupId, bool defaultOpen) args)
+    {
+        if (OpenGroupIds.Contains(args.groupId))
+        {
+            OpenGroupIds.Remove(args.groupId);
+        }
+        else
+        {
+            OpenGroupIds.Add(args.groupId);
+        }
+        StateHasChanged();
+        return System.Threading.Tasks.Task.CompletedTask;
+    }
+    
+    /// <summary>
+    /// 解析输出内容为事件组
+    /// </summary>
+    private void ParseOutputToEventGroups(string? output)
+    {
+        ParsedEventGroups.Clear();
+        OpenGroupIds.Clear();
+        
+        if (string.IsNullOrEmpty(output))
+        {
+            return;
+        }
+        
+        var trimmedOutput = output.Trim();
+        var events = new List<OutputEvent>();
+        
+        // 尝试解析 JSONL 格式（每行一个 JSON 对象）
+        try
+        {
+            var lines = trimmedOutput.Split('\n');
+            
+            foreach (var line in lines)
+            {
+                var trimmedLine = line.Trim();
+                if (string.IsNullOrEmpty(trimmedLine) || !trimmedLine.StartsWith("{"))
+                {
+                    continue;
+                }
+                
+                try
+                {
+                    using var doc = JsonDocument.Parse(trimmedLine);
+                    var root = doc.RootElement;
+                    
+                    var evt = ParseJsonToOutputEvent(root);
+                    if (evt != null)
+                    {
+                        events.Add(evt);
+                    }
+                }
+                catch
+                {
+                    // 单行解析失败，继续
+                }
+            }
+            
+            if (events.Count > 0)
+            {
+                GroupEvents(events);
+                return;
+            }
+        }
+        catch
+        {
+            // JSON 解析失败，使用纯文本模式
+        }
+        
+        // 纯文本模式：创建一个包含所有内容的事件组
+        var textEvent = new OutputEvent
+        {
+            Type = "text",
+            ItemType = "agent_message",
+            Content = output,
+            Title = "执行输出"
+        };
+        
+        var group = new OutputEventGroup
+        {
+            Id = "output-group",
+            Title = "执行输出",
+            Kind = "message",
+            IsCollapsible = false,
+            IsCompleted = true,
+            Items = new List<OutputEvent> { textEvent }
+        };
+        
+        ParsedEventGroups.Add(group);
+    }
+    
+    /// <summary>
+    /// 将 JSON 元素解析为 OutputEvent（参考 ClaudeCodeAdapter 的实现）
+    /// </summary>
+    private OutputEvent? ParseJsonToOutputEvent(JsonElement root)
+    {
+        if (!root.TryGetProperty("type", out var typeElement))
+        {
+            return null;
+        }
+        
+        var type = typeElement.GetString() ?? "";
+        var evt = new OutputEvent { Type = type };
+        
+        // 根据不同类型提取内容
+        switch (type)
+        {
+            case "system":
+                // 系统初始化事件
+                evt.Title = "系统初始化";
+                evt.ItemType = "system";
+                if (root.TryGetProperty("subtype", out var subtypeEl))
+                {
+                    var subtype = subtypeEl.GetString();
+                    if (subtype == "init")
+                    {
+                        evt.Title = "会话初始化";
+                        evt.Type = "init";
+                        var details = new List<string>();
+                        if (root.TryGetProperty("model", out var modelEl))
+                        {
+                            details.Add($"模型: {modelEl.GetString()}");
+                        }
+                        if (root.TryGetProperty("session_id", out var sessionEl))
+                        {
+                            details.Add($"会话: {sessionEl.GetString()}");
+                        }
+                        if (root.TryGetProperty("cwd", out var cwdEl))
+                        {
+                            details.Add($"工作目录: {cwdEl.GetString()}");
+                        }
+                        evt.Content = string.Join("\n", details);
+                    }
+                }
+                break;
+                
+            case "assistant":
+                // AI 助手响应 - 解析 message.content 数组
+                evt.Title = "AI 响应";
+                evt.ItemType = "agent_message";
+                if (root.TryGetProperty("message", out var msgEl))
+                {
+                    // 检查 content 数组
+                    if (msgEl.TryGetProperty("content", out var contentArr) && contentArr.ValueKind == JsonValueKind.Array)
+                    {
+                        // 优先检查是否有 tool_use
+                        foreach (var item in contentArr.EnumerateArray())
+                        {
+                            if (item.ValueKind != JsonValueKind.Object) continue;
+                            var itemType = GetStringProperty(item, "type");
+                            
+                            if (itemType == "tool_use")
+                            {
+                                evt.Type = "tool_use";
+                                evt.ItemType = "command_execution";
+                                evt.Title = "工具调用";
+                                var toolName = GetStringProperty(item, "name") ?? "Unknown";
+                                evt.Name = toolName;
+                                
+                                var sb = new System.Text.StringBuilder();
+                                sb.AppendLine($"**工具: {toolName}**");
+                                
+                                if (item.TryGetProperty("input", out var inputEl))
+                                {
+                                    // 特殊处理 Bash 工具
+                                    if (toolName == "Bash" && inputEl.TryGetProperty("command", out var cmdEl))
+                                    {
+                                        sb.AppendLine($"```bash\n{cmdEl.GetString()}\n```");
+                                    }
+                                    else
+                                    {
+                                        sb.AppendLine("```json");
+                                        sb.AppendLine(inputEl.ToString());
+                                        sb.AppendLine("```");
+                                    }
+                                }
+                                evt.Content = sb.ToString().TrimEnd();
+                                
+                                // 提取 usage
+                                if (msgEl.TryGetProperty("usage", out var toolUsageEl))
+                                {
+                                    evt.Usage = ExtractUsage(toolUsageEl);
+                                }
+                                return evt;
+                            }
+                        }
+                        
+                        // 提取 text 内容
+                        var textContent = ExtractTextFromContentArray(contentArr);
+                        if (!string.IsNullOrWhiteSpace(textContent))
+                        {
+                            evt.Content = textContent;
+                        }
+                    }
+                    
+                    // 提取 usage 信息
+                    if (msgEl.TryGetProperty("usage", out var usageEl))
+                    {
+                        evt.Usage = ExtractUsage(usageEl);
+                    }
+                }
+                break;
+                
+            case "user":
+                // 用户/工具结果
+                evt.Title = "工具结果";
+                evt.ItemType = "tool_result";
+                evt.Type = "tool_result";
+                
+                // 优先从 tool_use_result 提取
+                if (root.TryGetProperty("tool_use_result", out var toolResultEl))
+                {
+                    var sb = new System.Text.StringBuilder();
+                    if (toolResultEl.TryGetProperty("stdout", out var stdoutEl))
+                    {
+                        var stdout = stdoutEl.GetString() ?? "";
+                        if (!string.IsNullOrWhiteSpace(stdout))
+                        {
+                            sb.AppendLine(stdout.Trim());
+                        }
+                    }
+                    if (toolResultEl.TryGetProperty("stderr", out var stderrEl))
+                    {
+                        var stderr = stderrEl.GetString() ?? "";
+                        if (!string.IsNullOrWhiteSpace(stderr))
+                        {
+                            sb.AppendLine($"**stderr:** {stderr.Trim()}");
+                        }
+                    }
+                    evt.Content = sb.Length > 0 ? sb.ToString().TrimEnd() : "(无输出)";
+                }
+                // 从 message.content 提取
+                else if (root.TryGetProperty("message", out var userMsgEl) && 
+                         userMsgEl.TryGetProperty("content", out var userContentArr) &&
+                         userContentArr.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var item in userContentArr.EnumerateArray())
+                    {
+                        if (item.ValueKind != JsonValueKind.Object) continue;
+                        var itemType = GetStringProperty(item, "type");
+                        
+                        if (itemType == "tool_result")
+                        {
+                            var content = GetStringProperty(item, "content") ?? "";
+                            var isError = false;
+                            if (item.TryGetProperty("is_error", out var isErrEl) && isErrEl.ValueKind == JsonValueKind.True)
+                            {
+                                isError = true;
+                            }
+                            evt.Content = isError ? $"**错误:** {content}" : content;
+                            break;
+                        }
+                    }
+                }
+                break;
+                
+            case "result":
+                // 最终结果
+                evt.Title = "执行完成";
+                evt.ItemType = "result";
+                
+                var resultSb = new System.Text.StringBuilder();
+                
+                if (root.TryGetProperty("subtype", out var resultSubtypeEl))
+                {
+                    var subtype = resultSubtypeEl.GetString();
+                    if (subtype == "success")
+                    {
+                        evt.Title = "执行成功";
+                        resultSb.AppendLine("✓ Claude Code 执行完成");
+                    }
+                    else if (subtype == "error")
+                    {
+                        evt.Title = "执行失败";
+                        evt.Type = "error";
+                        resultSb.AppendLine("✗ Claude Code 执行失败");
+                    }
+                }
+                
+                // 提取最终结果
+                if (root.TryGetProperty("result", out var resultEl))
+                {
+                    var result = resultEl.GetString();
+                    if (!string.IsNullOrWhiteSpace(result))
+                    {
+                        resultSb.AppendLine();
+                        resultSb.AppendLine(result);
+                    }
+                }
+                
+                // 提取耗时
+                if (root.TryGetProperty("duration_ms", out var durationEl))
+                {
+                    var duration = durationEl.GetInt32();
+                    resultSb.AppendLine();
+                    resultSb.AppendLine($"耗时: {FormatDuration(duration)}");
+                }
+                
+                // 提取 usage 信息
+                if (root.TryGetProperty("usage", out var resultUsageEl))
+                {
+                    evt.Usage = ExtractUsage(resultUsageEl);
+                }
+                
+                evt.Content = resultSb.ToString().TrimEnd();
+                break;
+                
+            case "error":
+                evt.Title = "错误";
+                evt.ItemType = "error";
+                var errorMsg = GetStringProperty(root, "message") ?? GetStringProperty(root, "error") ?? "未知错误";
+                evt.Content = errorMsg;
+                break;
+                
+            default:
+                // 其他类型
+                evt.Title = type;
+                if (root.TryGetProperty("content", out var contentEl))
+                {
+                    if (contentEl.ValueKind == JsonValueKind.String)
+                    {
+                        evt.Content = contentEl.GetString() ?? "";
+                    }
+                    else if (contentEl.ValueKind == JsonValueKind.Array)
+                    {
+                        evt.Content = ExtractTextFromContentArray(contentEl);
+                    }
+                }
+                else if (root.TryGetProperty("message", out var defaultMsgEl))
+                {
+                    if (defaultMsgEl.TryGetProperty("content", out var defContentArr) && 
+                        defContentArr.ValueKind == JsonValueKind.Array)
+                    {
+                        evt.Content = ExtractTextFromContentArray(defContentArr);
+                    }
+                }
+                break;
+        }
+        
+        return evt;
+    }
+    
+    /// <summary>
+    /// 从 content 数组中提取文本内容
+    /// </summary>
+    private string ExtractTextFromContentArray(JsonElement contentArr)
+    {
+        var sb = new System.Text.StringBuilder();
+        
+        foreach (var item in contentArr.EnumerateArray())
+        {
+            if (item.ValueKind != JsonValueKind.Object) continue;
+            var itemType = GetStringProperty(item, "type");
+            
+            if (itemType == "text")
+            {
+                var text = GetStringProperty(item, "text");
+                if (!string.IsNullOrEmpty(text))
+                {
+                    sb.Append(text);
+                }
+            }
+            else if (itemType == "thinking")
+            {
+                var thinking = GetStringProperty(item, "thinking");
+                if (!string.IsNullOrEmpty(thinking))
+                {
+                    if (sb.Length > 0) sb.AppendLine();
+                    sb.Append(thinking);
+                }
+            }
+        }
+        
+        return sb.ToString();
+    }
+    
+    /// <summary>
+    /// 获取字符串属性
+    /// </summary>
+    private static string? GetStringProperty(JsonElement element, string propertyName)
+    {
+        if (element.TryGetProperty(propertyName, out var prop) && prop.ValueKind == JsonValueKind.String)
+        {
+            return prop.GetString();
+        }
+        return null;
+    }
+    
+    /// <summary>
+    /// 提取 usage 信息
+    /// </summary>
+    private TokenUsage? ExtractUsage(JsonElement usageEl)
+    {
+        var usage = new TokenUsage();
+        var hasValue = false;
+        
+        if (usageEl.TryGetProperty("input_tokens", out var inputEl) && inputEl.ValueKind == JsonValueKind.Number)
+        {
+            usage.InputTokens = inputEl.GetInt32();
+            hasValue = true;
+        }
+        if (usageEl.TryGetProperty("output_tokens", out var outputEl) && outputEl.ValueKind == JsonValueKind.Number)
+        {
+            usage.OutputTokens = outputEl.GetInt32();
+            hasValue = true;
+        }
+        if (usageEl.TryGetProperty("cache_read_input_tokens", out var cacheEl) && cacheEl.ValueKind == JsonValueKind.Number)
+        {
+            usage.CachedInputTokens = cacheEl.GetInt32();
+            hasValue = true;
+        }
+        
+        if (hasValue)
+        {
+            usage.TotalTokens = (usage.InputTokens ?? 0) + (usage.OutputTokens ?? 0);
+        }
+        
+        return hasValue ? usage : null;
+    }
+    
+    /// <summary>
+    /// 将事件列表分组
+    /// </summary>
+    private void GroupEvents(List<OutputEvent> events)
+    {
+        OutputEventGroup? currentGroup = null;
+        var groupIndex = 0;
+        
+        foreach (var evt in events)
+        {
+            // 判断是否需要创建新分组
+            var needNewGroup = currentGroup == null;
+            
+            // 工具调用事件应该独立分组
+            if (evt.Type.StartsWith("tool_") || evt.Type == "tool_use" || evt.Type == "tool_result")
+            {
+                if (currentGroup != null && currentGroup.Kind != "tool")
+                {
+                    ParsedEventGroups.Add(currentGroup);
+                    needNewGroup = true;
+                }
+                
+                if (needNewGroup)
+                {
+                    groupIndex++;
+                    currentGroup = new OutputEventGroup
+                    {
+                        Id = $"group-{groupIndex}",
+                        Title = evt.Name ?? evt.Title ?? "工具调用",
+                        Kind = "tool",
+                        IsCollapsible = true,
+                        IsCompleted = evt.Type == "tool_result" || evt.Type == "tool_finish",
+                        Items = new List<OutputEvent>()
+                    };
+                }
+            }
+            // 命令执行事件
+            else if (evt.Type == "command_execution" || evt.Type == "bash" || evt.ItemType == "command")
+            {
+                if (currentGroup != null && currentGroup.Kind != "command_execution")
+                {
+                    ParsedEventGroups.Add(currentGroup);
+                    needNewGroup = true;
+                }
+                
+                if (needNewGroup)
+                {
+                    groupIndex++;
+                    currentGroup = new OutputEventGroup
+                    {
+                        Id = $"group-{groupIndex}",
+                        Title = evt.Name ?? "命令执行",
+                        Kind = "command_execution",
+                        IsCollapsible = true,
+                        IsCompleted = false,
+                        Items = new List<OutputEvent>()
+                    };
+                }
+            }
+            // 消息类事件
+            else if (evt.Type == "text" || evt.Type == "message" || evt.Type == "assistant" || evt.ItemType == "agent_message")
+            {
+                if (currentGroup != null && currentGroup.Kind != "message")
+                {
+                    ParsedEventGroups.Add(currentGroup);
+                    needNewGroup = true;
+                }
+                
+                if (needNewGroup)
+                {
+                    groupIndex++;
+                    currentGroup = new OutputEventGroup
+                    {
+                        Id = $"group-{groupIndex}",
+                        Title = "AI 回复",
+                        Kind = "message",
+                        IsCollapsible = false,
+                        IsCompleted = true,
+                        Items = new List<OutputEvent>()
+                    };
+                }
+            }
+            else
+            {
+                // 其他事件类型，不分组
+                if (needNewGroup)
+                {
+                    groupIndex++;
+                    currentGroup = new OutputEventGroup
+                    {
+                        Id = $"group-{groupIndex}",
+                        Title = evt.Type,
+                        Kind = "other",
+                        IsCollapsible = false,
+                        IsCompleted = true,
+                        Items = new List<OutputEvent>()
+                    };
+                }
+            }
+            
+            currentGroup?.Items.Add(evt);
+            
+            // 更新完成状态
+            if (currentGroup != null)
+            {
+                if (evt.Type.EndsWith("_result") || evt.Type.EndsWith("_finish") || evt.Type.EndsWith(".completed"))
+                {
+                    currentGroup.IsCompleted = true;
+                }
+            }
+        }
+        
+        // 添加最后一个分组
+        if (currentGroup != null)
+        {
+            ParsedEventGroups.Add(currentGroup);
+        }
+    }
+    
+    private string FormatDuration(int durationMs)
+    {
+        if (durationMs < 1000)
+        {
+            return $"{durationMs}ms";
+        }
+        else if (durationMs < 60000)
+        {
+            return $"{durationMs / 1000.0:F1}s";
+        }
+        else if (durationMs < 3600000)
+        {
+            return $"{durationMs / 60000.0:F1}m";
+        }
+        else
+        {
+            return $"{durationMs / 3600000.0:F1}h";
+        }
+    }
+}

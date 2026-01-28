@@ -1,0 +1,653 @@
+@* ScheduledTaskPanel - 定时任务管理面板 *@
+@using WebCodeCli.Domain.Repositories.Base.ScheduledTask
+@using System.Net.Http.Json
+@inject HttpClient Http
+@inject ILogger<ScheduledTaskPanel> Logger
+
+<div class="h-full flex flex-col">
+    <!-- 工具栏 -->
+    <div class="p-3 border-b border-gray-200 flex-shrink-0">
+        <button @onclick="ShowCreateDialog" 
+                class="w-full px-4 py-2.5 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors flex items-center justify-center gap-2 text-sm font-medium">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+            </svg>
+            @CreateTaskText
+        </button>
+    </div>
+    
+    <!-- 任务列表 -->
+    <div class="flex-1 overflow-y-auto">
+        @if (IsLoading)
+        {
+            <div class="p-8 text-center">
+                <div class="inline-block animate-spin rounded-full h-8 w-8 border-3 border-gray-300 border-t-gray-700 mb-3"></div>
+                <p class="text-sm text-gray-500">@LoadingText</p>
+            </div>
+        }
+        else if (Tasks.Count == 0)
+        {
+            <div class="p-8 text-center">
+                <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <p class="text-gray-500 text-sm font-medium">@NoTasksText</p>
+                <p class="text-gray-400 text-xs mt-1">@NoTasksHintText</p>
+            </div>
+        }
+        else
+        {
+            <div class="p-2 space-y-2">
+                @foreach (var task in Tasks)
+                {
+                    <div class="bg-white border border-gray-200 rounded-lg p-3 hover:shadow-md transition-all cursor-pointer"
+                         @onclick="() => SelectTask(task)">
+                        <!-- 任务头部 -->
+                        <div class="flex items-start justify-between mb-2">
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-2">
+                                    <h3 class="font-medium text-gray-800 text-sm truncate">@task.Name</h3>
+                                    @if (task.IsEnabled)
+                                    {
+                                        <span class="px-1.5 py-0.5 text-xs bg-green-100 text-green-700 rounded">@EnabledText</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="px-1.5 py-0.5 text-xs bg-gray-100 text-gray-500 rounded">@DisabledText</span>
+                                    }
+                                </div>
+                                @if (!string.IsNullOrEmpty(task.Description))
+                                {
+                                    <p class="text-xs text-gray-500 mt-1 truncate">@task.Description</p>
+                                }
+                            </div>
+                        </div>
+                        
+                        <!-- 任务信息 -->
+                        <div class="flex flex-wrap items-center gap-3 text-xs text-gray-500">
+                            <div class="flex items-center gap-1" title="@CronExpressionTitleText">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                <span class="font-mono">@task.CronExpression</span>
+                            </div>
+                            
+                            @if (task.NextFireTime.HasValue && task.IsEnabled)
+                            {
+                                <div class="flex items-center gap-1" title="@NextRunText">
+                                    <svg class="w-3.5 h-3.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                                    </svg>
+                                    <span>@task.NextFireTime.Value.ToString("MM-dd HH:mm")</span>
+                                </div>
+                            }
+                            
+                            @if (!string.IsNullOrEmpty(task.LastExecutionStatus))
+                            {
+                                <div class="flex items-center gap-1" title="@LastStatusText">
+                                    @if (task.LastExecutionStatus == "Success")
+                                    {
+                                        <svg class="w-3.5 h-3.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                        </svg>
+                                        <span class="text-green-600">@SuccessText</span>
+                                    }
+                                    else if (task.LastExecutionStatus == "Failed")
+                                    {
+                                        <svg class="w-3.5 h-3.5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                        </svg>
+                                        <span class="text-red-600">@FailedText</span>
+                                    }
+                                    else if (task.LastExecutionStatus == "Running")
+                                    {
+                                        <div class="w-3.5 h-3.5 animate-spin rounded-full border-2 border-blue-300 border-t-blue-600"></div>
+                                        <span class="text-blue-600">@RunningText</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-gray-500">@task.LastExecutionStatus</span>
+                                    }
+                                </div>
+                            }
+                        </div>
+
+                        <!-- 操作按钮（底部一排） -->
+                        <div class="mt-2 pt-2 border-t border-gray-100 flex items-center justify-end gap-1" @onclick:stopPropagation="true">
+                            <button @onclick="() => ToggleTaskStatus(task)"
+                                    class="p-1.5 rounded transition-colors @(task.IsEnabled ? "hover:bg-gray-100" : "hover:bg-green-50")"
+                                    title="@(task.IsEnabled ? DisabledText : EnabledText)"
+                                    disabled="@(TogglingTaskIds.Contains(task.Id))">
+                                @if (TogglingTaskIds.Contains(task.Id))
+                                {
+                                    <div class="w-4 h-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600"></div>
+                                }
+                                else if (task.IsEnabled)
+                                {
+                                    <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636a9 9 0 11-12.728 0M12 3v9"></path>
+                                    </svg>
+                                }
+                                else
+                                {
+                                    <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636a9 9 0 11-12.728 0M12 3v9"></path>
+                                    </svg>
+                                }
+                            </button>
+                            <button @onclick="() => TriggerTask(task)" 
+                                    class="p-1.5 hover:bg-blue-50 rounded transition-colors" 
+                                    title="@RunNowText"
+                                    disabled="@(RunningTaskIds.Contains(task.Id))">
+                                @if (RunningTaskIds.Contains(task.Id))
+                                {
+                                    <div class="w-4 h-4 animate-spin rounded-full border-2 border-blue-300 border-t-blue-600"></div>
+                                }
+                                else
+                                {
+                                    <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                }
+                            </button>
+                            <button @onclick="() => ShowEditDialog(task)" 
+                                    class="p-1.5 hover:bg-gray-100 rounded transition-colors" 
+                                    title="@EditText">
+                                <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                </svg>
+                            </button>
+                            <button @onclick="() => ShowHistory(task)" 
+                                    class="p-1.5 hover:bg-gray-100 rounded transition-colors" 
+                                    title="@HistoryText">
+                                <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                                </svg>
+                            </button>
+                            <button @onclick="() => ConfirmDelete(task)" 
+                                    class="p-1.5 hover:bg-red-50 rounded transition-colors" 
+                                    title="@DeleteText">
+                                <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+<!-- 创建/编辑对话框 -->
+@if (ShowDialog)
+{
+    <ScheduledTaskDialog 
+        IsEdit="@IsEditMode"
+        Task="@EditingTask"
+        AvailableTools="@AvailableTools"
+        AvailableSessions="@AvailableSessions"
+        OnSave="@HandleSaveTask"
+        OnCancel="@CloseDialog"
+        CreateTitleText="@CreateDialogTitleText"
+        EditTitleText="@EditDialogTitleText"
+        NameLabelText="@NameLabelText"
+        NamePlaceholderText="@NamePlaceholderText"
+        DescriptionLabelText="@DescriptionLabelText"
+        DescriptionPlaceholderText="@DescriptionPlaceholderText"
+        ToolLabelText="@ToolLabelText"
+        SelectToolText="@SelectToolText"
+        PromptLabelText="@PromptLabelText"
+        PromptPlaceholderText="@PromptPlaceholderText"
+        SessionLabelText="@SessionLabelText"
+        NewSessionText="@NewSessionText"
+        SessionHintText="@SessionHintText"
+        CronLabelText="@CronLabelText"
+        SelectPresetText="@SelectPresetText"
+        ValidateText="@ValidateText"
+        NextRunTimesText="@NextRunTimesText"
+        AdvancedSettingsText="@AdvancedSettingsText"
+        TimeoutLabelText="@TimeoutLabelText"
+        SecondsText="@SecondsText"
+        TimeoutHintText="@TimeoutHintText"
+        RetryLabelText="@RetryLabelText"
+        RetryHintText="@RetryHintText"
+        EnabledLabelText="@DialogEnabledLabelText"
+        EnabledHintText="@DialogEnabledHintText"
+        CancelText="@CancelText"
+        SaveText="@SaveText"
+        CreateText="@CreateText"
+        CronValidText="@CronValidText"
+        CronInvalidText="@CronInvalidText"
+        CronValidateFailedText="@CronValidateFailedText"
+        ErrorNameRequiredText="@ErrorNameRequiredText"
+        ErrorToolRequiredText="@ErrorToolRequiredText"
+        ErrorPromptRequiredText="@ErrorPromptRequiredText"
+        ErrorCronRequiredText="@ErrorCronRequiredText"
+        ErrorCronInvalidText="@ErrorCronInvalidText"
+        SaveFailedText="@SaveFailedText"
+        SaveFailedWithMessageText="@SaveFailedWithMessageText" />
+}
+
+<!-- 执行历史对话框 -->
+@if (ShowHistoryDialog)
+{
+    <TaskExecutionHistoryDialog 
+        Task="@SelectedTask"
+        OnClose="@CloseHistoryDialog"
+        TitleText="@HistoryTitleText"
+        ExecutionListText="@ExecutionListText"
+        RefreshText="@RefreshText"
+        NoExecutionsText="@NoExecutionsText"
+        SuccessText="@SuccessText"
+        FailedText="@FailedText"
+        RunningText="@RunningText"
+        TimeoutText="@TimeoutText"
+        CancelledText="@CancelledText"
+        ManualText="@ManualText"
+        ScheduledText="@ScheduledText"
+        ExecutionDetailsText="@ExecutionDetailsText"
+        CancelExecutionText="@CancelExecutionText"
+        StartTimeText="@StartTimeText"
+        EndTimeText="@EndTimeText"
+        DurationText="@DurationText"
+        TriggerTypeText="@TriggerTypeText"
+        ErrorText="@ErrorText"
+        OutputText="@OutputText"
+        CopyText="@CopyText"
+        WrapTextText="@WrapTextText"
+        NoOutputText="@NoOutputText"
+        SelectExecutionHintText="@SelectExecutionHintText" />
+}
+
+<!-- 删除确认对话框 -->
+@if (ShowDeleteConfirm)
+{
+    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                    <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-800">@DeleteConfirmTitle</h3>
+            </div>
+            <p class="text-gray-600 mb-6">@string.Format(DeleteConfirmMessage, DeletingTask?.Name)</p>
+            <div class="flex items-center gap-3">
+                <button @onclick="CloseDeleteConfirm" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                    @CancelText
+                </button>
+                <button @onclick="ExecuteDelete" class="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+                    @ConfirmDeleteText
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    // 本地化文本
+    [Parameter] public string CreateTaskText { get; set; } = "创建定时任务";
+    [Parameter] public string LoadingText { get; set; } = "加载中...";
+    [Parameter] public string NoTasksText { get; set; } = "暂无定时任务";
+    [Parameter] public string NoTasksHintText { get; set; } = "点击上方按钮创建第一个任务";
+    [Parameter] public string EnabledText { get; set; } = "启用";
+    [Parameter] public string DisabledText { get; set; } = "禁用";
+    [Parameter] public string RunNowText { get; set; } = "立即执行";
+    [Parameter] public string EditText { get; set; } = "编辑";
+    [Parameter] public string HistoryText { get; set; } = "执行历史";
+    [Parameter] public string DeleteText { get; set; } = "删除";
+    [Parameter] public string NextRunText { get; set; } = "下次执行";
+    [Parameter] public string LastStatusText { get; set; } = "上次状态";
+    [Parameter] public string SuccessText { get; set; } = "成功";
+    [Parameter] public string FailedText { get; set; } = "失败";
+    [Parameter] public string RunningText { get; set; } = "执行中";
+    [Parameter] public string CancelText { get; set; } = "取消";
+    [Parameter] public string DeleteConfirmTitle { get; set; } = "确认删除";
+    [Parameter] public string DeleteConfirmMessage { get; set; } = "确定要删除任务 \"{0}\" 吗？此操作无法撤销。";
+    [Parameter] public string ConfirmDeleteText { get; set; } = "删除";
+    [Parameter] public string CronExpressionTitleText { get; set; } = "Cron 表达式";
+
+    // 创建/编辑对话框本地化文本
+    [Parameter] public string CreateDialogTitleText { get; set; } = "创建定时任务";
+    [Parameter] public string EditDialogTitleText { get; set; } = "编辑定时任务";
+    [Parameter] public string NameLabelText { get; set; } = "任务名称";
+    [Parameter] public string NamePlaceholderText { get; set; } = "请输入任务名称";
+    [Parameter] public string DescriptionLabelText { get; set; } = "描述";
+    [Parameter] public string DescriptionPlaceholderText { get; set; } = "请输入任务描述（可选）";
+    [Parameter] public string ToolLabelText { get; set; } = "CLI 工具";
+    [Parameter] public string SelectToolText { get; set; } = "请选择 CLI 工具";
+    [Parameter] public string PromptLabelText { get; set; } = "执行提示词";
+    [Parameter] public string PromptPlaceholderText { get; set; } = "请输入要执行的提示词...";
+    [Parameter] public string SessionLabelText { get; set; } = "目标会话";
+    [Parameter] public string NewSessionText { get; set; } = "创建新会话";
+    [Parameter] public string SessionHintText { get; set; } = "选择一个现有会话，或创建新会话执行任务";
+    [Parameter] public string CronLabelText { get; set; } = "Cron 表达式";
+    [Parameter] public string SelectPresetText { get; set; } = "选择预设...";
+    [Parameter] public string ValidateText { get; set; } = "验证";
+    [Parameter] public string NextRunTimesText { get; set; } = "接下来的执行时间：";
+    [Parameter] public string AdvancedSettingsText { get; set; } = "高级设置";
+    [Parameter] public string TimeoutLabelText { get; set; } = "执行超时";
+    [Parameter] public string SecondsText { get; set; } = "秒";
+    [Parameter] public string TimeoutHintText { get; set; } = "任务执行的最大时间，超时将自动终止（60-86400秒）";
+    [Parameter] public string RetryLabelText { get; set; } = "最大重试次数";
+    [Parameter] public string RetryHintText { get; set; } = "任务失败后的重试次数（0-5次）";
+    [Parameter] public string DialogEnabledLabelText { get; set; } = "启用任务";
+    [Parameter] public string DialogEnabledHintText { get; set; } = "启用后任务将按计划自动执行";
+    [Parameter] public string SaveText { get; set; } = "保存";
+    [Parameter] public string CreateText { get; set; } = "创建";
+    [Parameter] public string CronValidText { get; set; } = "Cron 表达式有效";
+    [Parameter] public string CronInvalidText { get; set; } = "无效的 Cron 表达式";
+    [Parameter] public string CronValidateFailedText { get; set; } = "验证失败";
+    [Parameter] public string ErrorNameRequiredText { get; set; } = "请输入任务名称";
+    [Parameter] public string ErrorToolRequiredText { get; set; } = "请选择 CLI 工具";
+    [Parameter] public string ErrorPromptRequiredText { get; set; } = "请输入执行提示词";
+    [Parameter] public string ErrorCronRequiredText { get; set; } = "请输入 Cron 表达式";
+    [Parameter] public string ErrorCronInvalidText { get; set; } = "Cron 表达式无效";
+    [Parameter] public string SaveFailedText { get; set; } = "保存失败";
+    [Parameter] public string SaveFailedWithMessageText { get; set; } = "保存失败: {0}";
+
+    // 执行历史对话框本地化文本
+    [Parameter] public string HistoryTitleText { get; set; } = "执行历史";
+    [Parameter] public string ExecutionListText { get; set; } = "执行记录";
+    [Parameter] public string RefreshText { get; set; } = "刷新";
+    [Parameter] public string NoExecutionsText { get; set; } = "暂无执行记录";
+    [Parameter] public string TimeoutText { get; set; } = "超时";
+    [Parameter] public string CancelledText { get; set; } = "已取消";
+    [Parameter] public string ManualText { get; set; } = "手动";
+    [Parameter] public string ScheduledText { get; set; } = "定时";
+    [Parameter] public string ExecutionDetailsText { get; set; } = "执行详情";
+    [Parameter] public string CancelExecutionText { get; set; } = "取消执行";
+    [Parameter] public string StartTimeText { get; set; } = "开始时间";
+    [Parameter] public string EndTimeText { get; set; } = "结束时间";
+    [Parameter] public string DurationText { get; set; } = "耗时";
+    [Parameter] public string TriggerTypeText { get; set; } = "触发方式";
+    [Parameter] public string ErrorText { get; set; } = "错误";
+    [Parameter] public string OutputText { get; set; } = "输出";
+    [Parameter] public string CopyText { get; set; } = "复制";
+    [Parameter] public string WrapTextText { get; set; } = "自动换行";
+    [Parameter] public string NoOutputText { get; set; } = "(无输出)";
+    [Parameter] public string SelectExecutionHintText { get; set; } = "请从左侧选择一条执行记录";
+    
+    // 回调
+    [Parameter] public EventCallback<string> OnError { get; set; }
+    
+    // 状态
+    private List<ScheduledTaskEntity> Tasks { get; set; } = new();
+    private List<ToolOption> AvailableTools { get; set; } = new();
+    private List<SessionOption> AvailableSessions { get; set; } = new();
+    private HashSet<string> RunningTaskIds { get; set; } = new();
+    private HashSet<string> TogglingTaskIds { get; set; } = new();
+    private bool IsLoading { get; set; } = true;
+    
+    // 对话框状态
+    private bool ShowDialog { get; set; }
+    private bool IsEditMode { get; set; }
+    private ScheduledTaskEntity? EditingTask { get; set; }
+    
+    private bool ShowHistoryDialog { get; set; }
+    private ScheduledTaskEntity? SelectedTask { get; set; }
+    
+    private bool ShowDeleteConfirm { get; set; }
+    private ScheduledTaskEntity? DeletingTask { get; set; }
+    
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTasksAsync();
+        await LoadToolsAsync();
+        await LoadSessionsAsync();
+    }
+    
+    private async Task LoadTasksAsync()
+    {
+        IsLoading = true;
+        StateHasChanged();
+        
+        try
+        {
+            var response = await Http.GetAsync("api/scheduled-task");
+            if (response.IsSuccessStatusCode)
+            {
+                Tasks = await response.Content.ReadFromJsonAsync<List<ScheduledTaskEntity>>() ?? new();
+            }
+            else
+            {
+                Logger.LogError("加载任务列表失败: {StatusCode}", response.StatusCode);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "加载任务列表失败");
+            await OnError.InvokeAsync("加载任务列表失败");
+        }
+        finally
+        {
+            IsLoading = false;
+            StateHasChanged();
+        }
+    }
+    
+    private async Task LoadToolsAsync()
+    {
+        try
+        {
+            var response = await Http.GetAsync("api/setting/tools");
+            if (response.IsSuccessStatusCode)
+            {
+                var tools = await response.Content.ReadFromJsonAsync<List<ToolInfo>>();
+                AvailableTools = tools?.Select(t => new ToolOption 
+                { 
+                    Id = t.Id, 
+                    Name = t.Name,
+                    Description = t.Description ?? string.Empty
+                }).ToList() ?? new();
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "加载工具列表失败");
+        }
+    }
+    
+    private async Task LoadSessionsAsync()
+    {
+        try
+        {
+            var response = await Http.GetAsync("api/session");
+            if (response.IsSuccessStatusCode)
+            {
+                var sessions = await response.Content.ReadFromJsonAsync<List<SessionInfo>>();
+                AvailableSessions = sessions?.Select(s => new SessionOption { Id = s.SessionId, Title = s.Title ?? s.SessionId }).ToList() ?? new();
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "加载会话列表失败");
+        }
+    }
+    
+    private void ShowCreateDialog()
+    {
+        IsEditMode = false;
+        EditingTask = null;
+        ShowDialog = true;
+    }
+    
+    private void ShowEditDialog(ScheduledTaskEntity task)
+    {
+        IsEditMode = true;
+        EditingTask = task;
+        ShowDialog = true;
+    }
+    
+    private void CloseDialog()
+    {
+        ShowDialog = false;
+        EditingTask = null;
+    }
+    
+    private async Task HandleSaveTask(ScheduledTaskEntity task)
+    {
+        CloseDialog();
+        await LoadTasksAsync();
+    }
+    
+    private void SelectTask(ScheduledTaskEntity task)
+    {
+        SelectedTask = task;
+    }
+    
+    private void ShowHistory(ScheduledTaskEntity task)
+    {
+        SelectedTask = task;
+        ShowHistoryDialog = true;
+    }
+    
+    private void CloseHistoryDialog()
+    {
+        ShowHistoryDialog = false;
+    }
+    
+    private async Task TriggerTask(ScheduledTaskEntity task)
+    {
+        if (RunningTaskIds.Contains(task.Id)) return;
+        
+        RunningTaskIds.Add(task.Id);
+        StateHasChanged();
+        
+        try
+        {
+            var response = await Http.PostAsync($"api/scheduled-task/{task.Id}/trigger", null);
+            if (!response.IsSuccessStatusCode)
+            {
+                var error = await response.Content.ReadFromJsonAsync<ErrorResponse>();
+                Logger.LogError("触发任务失败: {Error}", error?.Error);
+                await OnError.InvokeAsync(error?.Error ?? "触发任务失败");
+            }
+            
+            // 延迟后刷新列表
+            await Task.Delay(1000);
+            await LoadTasksAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "触发任务失败");
+            await OnError.InvokeAsync("触发任务失败");
+        }
+        finally
+        {
+            RunningTaskIds.Remove(task.Id);
+            StateHasChanged();
+        }
+    }
+
+    private async Task ToggleTaskStatus(ScheduledTaskEntity task)
+    {
+        if (TogglingTaskIds.Contains(task.Id)) return;
+
+        TogglingTaskIds.Add(task.Id);
+        StateHasChanged();
+
+        try
+        {
+            var request = new { IsEnabled = !task.IsEnabled };
+            var response = await Http.PostAsJsonAsync($"api/scheduled-task/{task.Id}/toggle", request);
+            if (!response.IsSuccessStatusCode)
+            {
+                var error = await response.Content.ReadFromJsonAsync<ErrorResponse>();
+                Logger.LogError("切换任务状态失败: {Error}", error?.Error);
+                await OnError.InvokeAsync(error?.Error ?? "切换任务状态失败");
+            }
+
+            await LoadTasksAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "切换任务状态失败");
+            await OnError.InvokeAsync("切换任务状态失败");
+        }
+        finally
+        {
+            TogglingTaskIds.Remove(task.Id);
+            StateHasChanged();
+        }
+    }
+    
+    private void ConfirmDelete(ScheduledTaskEntity task)
+    {
+        DeletingTask = task;
+        ShowDeleteConfirm = true;
+    }
+    
+    private void CloseDeleteConfirm()
+    {
+        ShowDeleteConfirm = false;
+        DeletingTask = null;
+    }
+    
+    private async Task ExecuteDelete()
+    {
+        if (DeletingTask == null) return;
+        
+        try
+        {
+            var response = await Http.DeleteAsync($"api/scheduled-task/{DeletingTask.Id}");
+            if (response.IsSuccessStatusCode)
+            {
+                CloseDeleteConfirm();
+                await LoadTasksAsync();
+            }
+            else
+            {
+                var error = await response.Content.ReadFromJsonAsync<ErrorResponse>();
+                await OnError.InvokeAsync(error?.Error ?? "删除任务失败");
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "删除任务失败");
+            await OnError.InvokeAsync("删除任务失败");
+        }
+    }
+    
+    // 辅助类
+    public class ToolOption
+    {
+        public string Id { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        
+        /// <summary>
+        /// 显示名称（名称 - 描述）
+        /// </summary>
+        public string DisplayName => string.IsNullOrEmpty(Description) ? Name : $"{Name} - {Description}";
+    }
+    
+    public class SessionOption
+    {
+        public string Id { get; set; } = string.Empty;
+        public string Title { get; set; } = string.Empty;
+    }
+    
+    public class ToolInfo
+    {
+        public string Id { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+        public string? Description { get; set; }
+    }
+    
+    public class SessionInfo
+    {
+        public string SessionId { get; set; } = string.Empty;
+        public string? Title { get; set; }
+    }
+    
+    public class ErrorResponse
+    {
+        public string? Error { get; set; }
+    }
+}

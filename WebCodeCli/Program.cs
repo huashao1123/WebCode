@@ -60,6 +60,11 @@ builder.Services.AddHttpForwarder();
 // 添加工作区清理后台服务
 builder.Services.AddHostedService<WorkspaceCleanupBackgroundService>();
 
+// 添加 Quartz 定时任务后台服务
+// 先注册为 Singleton，然后作为 IHostedService
+builder.Services.AddSingleton<QuartzHostedService>();
+builder.Services.AddHostedService(sp => sp.GetRequiredService<QuartzHostedService>());
+
 // 加载数据库配置
 var dbConfig = builder.Configuration.GetSection("DBConnection").Get<DBConnectionOption>();
 if (dbConfig != null)

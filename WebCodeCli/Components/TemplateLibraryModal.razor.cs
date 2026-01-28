@@ -15,6 +15,9 @@ public partial class TemplateLibraryModal : ComponentBase
     [Inject] private IPromptTemplateService PromptTemplateService { get; set; } = default!;
 
     [Parameter] public EventCallback<PromptTemplate> OnTemplateSelected { get; set; }
+    [Parameter] public bool ShowButton { get; set; } = true;
+    [Parameter] public string ButtonClass { get; set; } = "btn-default flex items-center gap-2";
+    [Parameter] public string ButtonTextClass { get; set; } = "hidden sm:inline";
 
     private List<PromptTemplate> _templates = new();
     private List<PromptTemplate> _filteredTemplates = new();

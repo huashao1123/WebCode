@@ -14,19 +14,52 @@ public class SettingController : ControllerBase
     private readonly IUserSettingService _settingService;
     private readonly IInputHistoryService _inputHistoryService;
     private readonly IQuickActionService _quickActionService;
+    private readonly ICliExecutorService _cliExecutorService;
     private readonly ILogger<SettingController> _logger;
 
     public SettingController(
         IUserSettingService settingService,
         IInputHistoryService inputHistoryService,
         IQuickActionService quickActionService,
+        ICliExecutorService cliExecutorService,
         ILogger<SettingController> logger)
     {
         _settingService = settingService;
         _inputHistoryService = inputHistoryService;
         _quickActionService = quickActionService;
+        _cliExecutorService = cliExecutorService;
         _logger = logger;
     }
+
+    #region CLI 工具
+
+    /// <summary>
+    /// 获取所有可用的 CLI 工具
+    /// </summary>
+    [HttpGet("tools")]
+    public ActionResult<List<CliToolInfo>> GetTools()
+    {
+        try
+        {
+            var tools = _cliExecutorService.GetAvailableTools();
+            var result = tools.Select(t => new CliToolInfo
+            {
+                Id = t.Id,
+                Name = t.Name,
+                Description = t.Description,
+                Enabled = t.Enabled
+            }).ToList();
+            
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "获取 CLI 工具列表失败");
+            return StatusCode(500, new { Error = "获取 CLI 工具列表失败" });
+        }
+    }
+
+    #endregion
 
     #region 用户设置
 
@@ -303,4 +336,15 @@ public class SettingValueDto
 public class InputHistoryDto
 {
     public string Text { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// CLI 工具信息 DTO
+/// </summary>
+public class CliToolInfo
+{
+    public string Id { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public bool Enabled { get; set; }
 }

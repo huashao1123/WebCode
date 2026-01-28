@@ -1,0 +1,274 @@
+@* SidePanel - 侧边面板容器，根据 ActivityBar 选中项显示不同内容 *@
+@using WebCodeCli.Domain.Domain.Model
+
+@if (Show)
+{
+        <div class="side-panel hidden lg:flex flex-col h-screen bg-white border-r border-gray-200 flex-shrink-0 overflow-hidden transition-all duration-300 ease-in-out shadow-lg"
+            style="width: @(Width)px; min-width: @(Width)px;">
+        <!-- 面板标题栏 -->
+        <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-gray-50 flex-shrink-0">
+            <h2 class="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                @GetPanelIcon()
+                <span>@GetPanelTitle()</span>
+            </h2>
+            <button @onclick="OnClose" 
+                    class="p-1.5 hover:bg-gray-200 rounded-lg transition-colors"
+                    title="@CloseText">
+                <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+
+        <!-- 面板内容区域 -->
+        <div class="flex-1 overflow-y-auto overflow-x-hidden">
+            <div @key="ActiveView">
+                @switch (ActiveView)
+                {
+                    case "sessions":
+                        @SessionsContent
+                        break;
+                    case "context":
+                        @ContextContent
+                        break;
+                    case "tasks":
+                        <ScheduledTaskPanel 
+                            CreateTaskText="@CreateTaskText"
+                            LoadingText="@LoadingText"
+                            NoTasksText="@NoTasksText"
+                            NoTasksHintText="@NoTasksHintText"
+                            EnabledText="@EnabledText"
+                            DisabledText="@DisabledText"
+                            RunNowText="@RunNowText"
+                            EditText="@EditText"
+                            HistoryText="@HistoryText"
+                            DeleteText="@DeleteText"
+                            NextRunText="@NextRunText"
+                            LastStatusText="@LastStatusText"
+                            SuccessText="@SuccessText"
+                            FailedText="@FailedText"
+                            RunningText="@RunningText"
+                            TimeoutText="@TimeoutText"
+                            CancelledText="@CancelledText"
+                            ManualText="@ManualText"
+                            ScheduledText="@ScheduledText"
+                            CancelText="@CancelText"
+                            DeleteConfirmTitle="@DeleteConfirmTitle"
+                            DeleteConfirmMessage="@DeleteConfirmMessage"
+                            ConfirmDeleteText="@ConfirmDeleteText"
+                            CronExpressionTitleText="@CronExpressionTitleText"
+                            CreateDialogTitleText="@CreateDialogTitleText"
+                            EditDialogTitleText="@EditDialogTitleText"
+                            NameLabelText="@NameLabelText"
+                            NamePlaceholderText="@NamePlaceholderText"
+                            DescriptionLabelText="@DescriptionLabelText"
+                            DescriptionPlaceholderText="@DescriptionPlaceholderText"
+                            ToolLabelText="@ToolLabelText"
+                            SelectToolText="@SelectToolText"
+                            PromptLabelText="@PromptLabelText"
+                            PromptPlaceholderText="@PromptPlaceholderText"
+                            SessionLabelText="@SessionLabelText"
+                            NewSessionText="@NewSessionText"
+                            SessionHintText="@SessionHintText"
+                            CronLabelText="@CronLabelText"
+                            SelectPresetText="@SelectPresetText"
+                            ValidateText="@ValidateText"
+                            NextRunTimesText="@NextRunTimesText"
+                            AdvancedSettingsText="@AdvancedSettingsText"
+                            TimeoutLabelText="@TimeoutLabelText"
+                            SecondsText="@SecondsText"
+                            TimeoutHintText="@TimeoutHintText"
+                            RetryLabelText="@RetryLabelText"
+                            RetryHintText="@RetryHintText"
+                            DialogEnabledLabelText="@DialogEnabledLabelText"
+                            DialogEnabledHintText="@DialogEnabledHintText"
+                            SaveText="@SaveText"
+                            CreateText="@CreateText"
+                            CronValidText="@CronValidText"
+                            CronInvalidText="@CronInvalidText"
+                            CronValidateFailedText="@CronValidateFailedText"
+                            ErrorNameRequiredText="@ErrorNameRequiredText"
+                            ErrorToolRequiredText="@ErrorToolRequiredText"
+                            ErrorPromptRequiredText="@ErrorPromptRequiredText"
+                            ErrorCronRequiredText="@ErrorCronRequiredText"
+                            ErrorCronInvalidText="@ErrorCronInvalidText"
+                            SaveFailedText="@SaveFailedText"
+                            SaveFailedWithMessageText="@SaveFailedWithMessageText"
+                            HistoryTitleText="@HistoryTitleText"
+                            ExecutionListText="@ExecutionListText"
+                            RefreshText="@RefreshText"
+                            NoExecutionsText="@NoExecutionsText"
+                            ExecutionDetailsText="@ExecutionDetailsText"
+                            CancelExecutionText="@CancelExecutionText"
+                            StartTimeText="@StartTimeText"
+                            EndTimeText="@EndTimeText"
+                            DurationText="@DurationText"
+                            TriggerTypeText="@TriggerTypeText"
+                            ErrorText="@ErrorText"
+                            OutputText="@OutputText"
+                            CopyText="@CopyText"
+                            WrapTextText="@WrapTextText"
+                            NoOutputText="@NoOutputText"
+                            SelectExecutionHintText="@SelectExecutionHintText"
+                            OnError="@HandleError" />
+                        break;
+                    case "settings":
+                        @SettingsContent
+                        break;
+                    default:
+                        break;
+                }
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool Show { get; set; }
+    [Parameter] public string ActiveView { get; set; } = "sessions";
+    [Parameter] public double Width { get; set; } = 280;
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    // 本地化文本
+    [Parameter] public string CloseText { get; set; } = "关闭";
+    [Parameter] public string SessionsTitle { get; set; } = "会话历史";
+    [Parameter] public string ContextTitle { get; set; } = "上下文";
+    [Parameter] public string TasksTitle { get; set; } = "定时任务";
+    [Parameter] public string SettingsTitle { get; set; } = "设置";
+    
+    // 定时任务面板本地化文本
+    [Parameter] public string CreateTaskText { get; set; } = "创建定时任务";
+    [Parameter] public string LoadingText { get; set; } = "加载中...";
+    [Parameter] public string NoTasksText { get; set; } = "暂无定时任务";
+    [Parameter] public string NoTasksHintText { get; set; } = "点击上方按钮创建第一个任务";
+    [Parameter] public string EnabledText { get; set; } = "启用";
+    [Parameter] public string DisabledText { get; set; } = "禁用";
+    [Parameter] public string RunNowText { get; set; } = "立即执行";
+    [Parameter] public string EditText { get; set; } = "编辑";
+    [Parameter] public string HistoryText { get; set; } = "执行历史";
+    [Parameter] public string DeleteText { get; set; } = "删除";
+    [Parameter] public string NextRunText { get; set; } = "下次执行";
+    [Parameter] public string LastStatusText { get; set; } = "上次状态";
+    [Parameter] public string SuccessText { get; set; } = "成功";
+    [Parameter] public string FailedText { get; set; } = "失败";
+    [Parameter] public string RunningText { get; set; } = "执行中";
+    [Parameter] public string TimeoutText { get; set; } = "超时";
+    [Parameter] public string CancelledText { get; set; } = "已取消";
+    [Parameter] public string ManualText { get; set; } = "手动";
+    [Parameter] public string ScheduledText { get; set; } = "定时";
+    [Parameter] public string CancelText { get; set; } = "取消";
+    [Parameter] public string DeleteConfirmTitle { get; set; } = "确认删除";
+    [Parameter] public string DeleteConfirmMessage { get; set; } = "确定要删除任务 \"{0}\" 吗？此操作无法撤销。";
+    [Parameter] public string ConfirmDeleteText { get; set; } = "删除";
+    [Parameter] public string CronExpressionTitleText { get; set; } = "Cron 表达式";
+
+    // 创建/编辑对话框
+    [Parameter] public string CreateDialogTitleText { get; set; } = "创建定时任务";
+    [Parameter] public string EditDialogTitleText { get; set; } = "编辑定时任务";
+    [Parameter] public string NameLabelText { get; set; } = "任务名称";
+    [Parameter] public string NamePlaceholderText { get; set; } = "请输入任务名称";
+    [Parameter] public string DescriptionLabelText { get; set; } = "描述";
+    [Parameter] public string DescriptionPlaceholderText { get; set; } = "请输入任务描述（可选）";
+    [Parameter] public string ToolLabelText { get; set; } = "CLI 工具";
+    [Parameter] public string SelectToolText { get; set; } = "请选择 CLI 工具";
+    [Parameter] public string PromptLabelText { get; set; } = "执行提示词";
+    [Parameter] public string PromptPlaceholderText { get; set; } = "请输入要执行的提示词...";
+    [Parameter] public string SessionLabelText { get; set; } = "目标会话";
+    [Parameter] public string NewSessionText { get; set; } = "创建新会话";
+    [Parameter] public string SessionHintText { get; set; } = "选择一个现有会话，或创建新会话执行任务";
+    [Parameter] public string CronLabelText { get; set; } = "Cron 表达式";
+    [Parameter] public string SelectPresetText { get; set; } = "选择预设...";
+    [Parameter] public string ValidateText { get; set; } = "验证";
+    [Parameter] public string NextRunTimesText { get; set; } = "接下来的执行时间：";
+    [Parameter] public string AdvancedSettingsText { get; set; } = "高级设置";
+    [Parameter] public string TimeoutLabelText { get; set; } = "执行超时";
+    [Parameter] public string SecondsText { get; set; } = "秒";
+    [Parameter] public string TimeoutHintText { get; set; } = "任务执行的最大时间，超时将自动终止（60-86400秒）";
+    [Parameter] public string RetryLabelText { get; set; } = "最大重试次数";
+    [Parameter] public string RetryHintText { get; set; } = "任务失败后的重试次数（0-5次）";
+    [Parameter] public string DialogEnabledLabelText { get; set; } = "启用任务";
+    [Parameter] public string DialogEnabledHintText { get; set; } = "启用后任务将按计划自动执行";
+    [Parameter] public string SaveText { get; set; } = "保存";
+    [Parameter] public string CreateText { get; set; } = "创建";
+    [Parameter] public string CronValidText { get; set; } = "Cron 表达式有效";
+    [Parameter] public string CronInvalidText { get; set; } = "无效的 Cron 表达式";
+    [Parameter] public string CronValidateFailedText { get; set; } = "验证失败";
+    [Parameter] public string ErrorNameRequiredText { get; set; } = "请输入任务名称";
+    [Parameter] public string ErrorToolRequiredText { get; set; } = "请选择 CLI 工具";
+    [Parameter] public string ErrorPromptRequiredText { get; set; } = "请输入执行提示词";
+    [Parameter] public string ErrorCronRequiredText { get; set; } = "请输入 Cron 表达式";
+    [Parameter] public string ErrorCronInvalidText { get; set; } = "Cron 表达式无效";
+    [Parameter] public string SaveFailedText { get; set; } = "保存失败";
+    [Parameter] public string SaveFailedWithMessageText { get; set; } = "保存失败: {0}";
+
+    // 执行历史对话框
+    [Parameter] public string HistoryTitleText { get; set; } = "执行历史";
+    [Parameter] public string ExecutionListText { get; set; } = "执行记录";
+    [Parameter] public string RefreshText { get; set; } = "刷新";
+    [Parameter] public string NoExecutionsText { get; set; } = "暂无执行记录";
+    [Parameter] public string ExecutionDetailsText { get; set; } = "执行详情";
+    [Parameter] public string CancelExecutionText { get; set; } = "取消执行";
+    [Parameter] public string StartTimeText { get; set; } = "开始时间";
+    [Parameter] public string EndTimeText { get; set; } = "结束时间";
+    [Parameter] public string DurationText { get; set; } = "耗时";
+    [Parameter] public string TriggerTypeText { get; set; } = "触发方式";
+    [Parameter] public string ErrorText { get; set; } = "错误";
+    [Parameter] public string OutputText { get; set; } = "输出";
+    [Parameter] public string CopyText { get; set; } = "复制";
+    [Parameter] public string WrapTextText { get; set; } = "自动换行";
+    [Parameter] public string NoOutputText { get; set; } = "(无输出)";
+    [Parameter] public string SelectExecutionHintText { get; set; } = "请从左侧选择一条执行记录";
+    
+    // 错误处理回调
+    [Parameter] public EventCallback<string> OnError { get; set; }
+    
+    private async Task HandleError(string error)
+    {
+        await OnError.InvokeAsync(error);
+    }
+
+    // 内容插槽
+    [Parameter] public RenderFragment? SessionsContent { get; set; }
+    [Parameter] public RenderFragment? ContextContent { get; set; }
+    [Parameter] public RenderFragment? SettingsContent { get; set; }
+
+    private string GetPanelTitle()
+    {
+        return ActiveView switch
+        {
+            "sessions" => SessionsTitle,
+            "context" => ContextTitle,
+            "tasks" => TasksTitle,
+            "settings" => SettingsTitle,
+            _ => ""
+        };
+    }
+
+    private RenderFragment GetPanelIcon() => __builder =>
+    {
+        switch (ActiveView)
+        {
+            case "sessions":
+                <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                break;
+            case "context":
+                <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                break;
+            case "tasks":
+                <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+                </svg>
+                break;
+            case "settings":
+                <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                </svg>
+                break;
+        }
+    };
+}

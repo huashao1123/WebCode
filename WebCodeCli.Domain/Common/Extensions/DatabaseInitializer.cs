@@ -10,6 +10,7 @@ using WebCodeCli.Domain.Repositories.Base.InputHistory;
 using WebCodeCli.Domain.Repositories.Base.QuickAction;
 using WebCodeCli.Domain.Repositories.Base.UserSetting;
 using WebCodeCli.Domain.Repositories.Base.Project;
+using WebCodeCli.Domain.Repositories.Base.ScheduledTask;
 
 namespace WebCodeCli.Domain.Common.Extensions;
 
@@ -106,6 +107,70 @@ public static class DatabaseInitializer
         catch (Exception ex)
         {
             logger?.LogWarning(ex, "创建项目索引时发生警告（可能索引已存在）");
+        }
+    }
+    
+    /// <summary>
+    /// 初始化定时任务相关的数据库表
+    /// </summary>
+    public static void InitializeScheduledTaskTables(this SqlSugarScope db, ILogger? logger = null)
+    {
+        try
+        {
+            logger?.LogInformation("开始初始化定时任务相关表...");
+            
+            // 创建定时任务表
+            db.CodeFirst.InitTables<ScheduledTaskEntity>();
+            
+            // 创建任务执行记录表
+            db.CodeFirst.InitTables<TaskExecutionEntity>();
+            
+            logger?.LogInformation("定时任务相关表初始化成功");
+            
+            // 创建索引
+            InitializeScheduledTaskIndexes(db, logger);
+        }
+        catch (Exception ex)
+        {
+            logger?.LogError(ex, "初始化定时任务相关表失败");
+            throw;
+        }
+    }
+    
+    /// <summary>
+    /// 为定时任务相关表创建索引
+    /// </summary>
+    private static void InitializeScheduledTaskIndexes(SqlSugarScope db, ILogger? logger = null)
+    {
+        try
+        {
+            logger?.LogInformation("开始创建定时任务相关索引...");
+            
+            // ScheduledTask: Username + UpdatedAt 索引（任务列表排序）
+            CreateIndexIfNotExists(db, "ScheduledTask", "IX_ScheduledTask_Username_UpdatedAt", 
+                new[] { "Username", "UpdatedAt" }, logger);
+            
+            // ScheduledTask: Username + IsEnabled 索引（筛选启用的任务）
+            CreateIndexIfNotExists(db, "ScheduledTask", "IX_ScheduledTask_Username_IsEnabled", 
+                new[] { "Username", "IsEnabled" }, logger);
+            
+            // ScheduledTask: Username + Name 唯一索引（确保同一用户的任务名称唯一）
+            CreateIndexIfNotExists(db, "ScheduledTask", "IX_ScheduledTask_Username_Name", 
+                new[] { "Username", "Name" }, logger, isUnique: true);
+            
+            // TaskExecution: TaskId + StartTime 索引（按任务查询执行历史）
+            CreateIndexIfNotExists(db, "TaskExecution", "IX_TaskExecution_TaskId_StartTime", 
+                new[] { "TaskId", "StartTime" }, logger);
+            
+            // TaskExecution: Status 索引（查询正在运行的任务）
+            CreateIndexIfNotExists(db, "TaskExecution", "IX_TaskExecution_Status", 
+                new[] { "Status" }, logger);
+            
+            logger?.LogInformation("定时任务相关索引创建成功");
+        }
+        catch (Exception ex)
+        {
+            logger?.LogWarning(ex, "创建定时任务索引时发生警告（可能索引已存在）");
         }
     }
     

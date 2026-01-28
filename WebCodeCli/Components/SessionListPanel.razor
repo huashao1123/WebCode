@@ -2,20 +2,23 @@
 
 @if (Show)
 {
-    <div class="block fixed inset-y-0 left-0 w-80 bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out">
-        <div class="p-4 border-b-2 border-gray-200 flex items-center justify-between bg-gray-50">
-            <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2">
-                <svg class="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-                @TitleText
-            </h2>
-            <button @onclick="OnClose" class="p-2 hover:bg-gray-200 rounded-lg transition-colors" title="@CloseText">
-                <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
-            </button>
-        </div>
+    <div class="@ContainerClass">
+        @if (ShowHeader)
+        {
+            <div class="p-4 border-b-2 border-gray-200 flex items-center justify-between bg-gray-50">
+                <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    @TitleText
+                </h2>
+                <button @onclick="OnClose" class="p-2 hover:bg-gray-200 rounded-lg transition-colors" title="@CloseText">
+                    <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+        }
 
         <div class="p-4 border-b border-gray-200">
             @if (IsMultiSelectMode)
@@ -68,7 +71,7 @@
             }
         </div>
 
-        <div class="flex-1 overflow-y-auto" style="height: calc(100vh - 180px);">
+        <div class="flex-1 overflow-y-auto" style="@ListContainerStyle">
             @if (IsLoadingSessions)
             {
                 <div class="p-8 text-center">
@@ -143,6 +146,8 @@
 
 @code {
     [Parameter] public bool Show { get; set; }
+    [Parameter] public bool Embedded { get; set; }
+    [Parameter] public bool ShowHeader { get; set; } = true;
     [Parameter] public IReadOnlyList<SessionHistory> Sessions { get; set; } = Array.Empty<SessionHistory>();
     [Parameter] public IReadOnlyCollection<string> SelectedSessionIds { get; set; } = Array.Empty<string>();
     [Parameter] public bool IsMultiSelectMode { get; set; }
@@ -180,6 +185,14 @@
     [Parameter] public Func<DateTime, string> FormatDateTime { get; set; } = _ => string.Empty;
 
     private bool IsAllSelected => Sessions.Count > 0 && SelectedSessionIds.Count == Sessions.Count;
+
+    private string ContainerClass => Embedded
+        ? "flex flex-col h-full w-full"
+        : "block fixed inset-y-0 left-0 w-80 bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out";
+
+    private string ListContainerStyle => Embedded
+        ? string.Empty
+        : "height: calc(100vh - 180px);";
 
     private Task OnSessionClick(string sessionId)
     {
