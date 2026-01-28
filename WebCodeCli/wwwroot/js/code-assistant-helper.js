@@ -465,21 +465,41 @@ window.setupCompositionEvents = function(elementId, dotNetRef) {
     window.disposeCompositionEvents(elementId);
 
     const onStart = () => {
+        // 设置本地组合状态标志
+        const handler = window._compositionHandlers[elementId];
+        if (handler) {
+            handler.isComposing = true;
+        }
         if (dotNetRef) {
             dotNetRef.invokeMethodAsync('OnCompositionStart');
         }
     };
 
     const onEnd = () => {
+        // 清除本地组合状态标志
+        const handler = window._compositionHandlers[elementId];
+        if (handler) {
+            handler.isComposing = false;
+        }
         if (dotNetRef) {
-            dotNetRef.invokeMethodAsync('OnCompositionEnd');
+            // 组合结束时传递最终值，确保中文输入正确同步
+            const finalValue = el.value || '';
+            dotNetRef.invokeMethodAsync('OnCompositionEnd', finalValue);
+        }
+    };
+
+    // 阻止组合期间的 input 事件冒泡，避免 Blazor 更新导致闪烁
+    const onInput = (e) => {
+        if (e.isComposing || window._compositionHandlers[elementId]?.isComposing) {
+            e.stopPropagation();
         }
     };
 
     el.addEventListener('compositionstart', onStart);
     el.addEventListener('compositionend', onEnd);
+    el.addEventListener('input', onInput, true);
 
-    window._compositionHandlers[elementId] = { el, onStart, onEnd, dotNetRef };
+    window._compositionHandlers[elementId] = { el, onStart, onEnd, onInput, dotNetRef, isComposing: false };
 };
 
 window.disposeCompositionEvents = function(elementId) {
@@ -487,6 +507,7 @@ window.disposeCompositionEvents = function(elementId) {
     if (handler) {
         handler.el.removeEventListener('compositionstart', handler.onStart);
         handler.el.removeEventListener('compositionend', handler.onEnd);
+        handler.el.removeEventListener('input', handler.onInput, true);
         delete window._compositionHandlers[elementId];
     }
 };

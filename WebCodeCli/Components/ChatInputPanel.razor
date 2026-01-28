@@ -189,9 +189,15 @@
     }
 
     [JSInvokable]
-    public void OnCompositionEnd()
+    public async Task OnCompositionEnd(string finalValue)
     {
         _isComposing = false;
+        // 组合结束时同步最终值
+        if (finalValue != InputMessage)
+        {
+            await InputMessageChanged.InvokeAsync(finalValue);
+            await OnAfterInput.InvokeAsync();
+        }
     }
 
     public async ValueTask DisposeAsync()
@@ -209,6 +215,12 @@
 
     private async Task HandleInput(ChangeEventArgs args)
     {
+        // 组合期间（中文输入法候选阶段）不触发更新，避免闪烁
+        if (_isComposing)
+        {
+            return;
+        }
+        
         var value = args.Value?.ToString() ?? string.Empty;
         await InputMessageChanged.InvokeAsync(value);
         await OnAfterInput.InvokeAsync();
