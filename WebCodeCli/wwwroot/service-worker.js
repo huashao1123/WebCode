@@ -3,9 +3,9 @@
  * 提供离线缓存和后台同步功能
  */
 
-const CACHE_NAME = 'webcode-pwa-v1';
-const STATIC_CACHE_NAME = 'webcode-static-v1';
-const DYNAMIC_CACHE_NAME = 'webcode-dynamic-v1';
+const CACHE_NAME = 'webcode-pwa-v0.2.3';
+const STATIC_CACHE_NAME = 'webcode-static-v0.2.3';
+const DYNAMIC_CACHE_NAME = 'webcode-dynamic-v0.2.3';
 
 // 需要预缓存的静态资源
 const STATIC_ASSETS = [

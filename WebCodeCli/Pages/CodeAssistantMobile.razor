@@ -121,7 +121,7 @@
             {
                 <button @onclick="() => SwitchTab(tab.Key)"
                         class="flex-1 flex flex-col items-center justify-center h-full gap-1 transition-colors @(tab.Key == _activeTab ? "text-blue-600" : "text-gray-500 active:text-gray-700")">
-                    <div class="relative">
+                    <div class="relative tab-icon">
                         @((MarkupString)tab.Icon)
                         @if (tab.Key == "output" && _isLoading)
                         {
@@ -1261,5 +1261,17 @@
     img {
         -webkit-user-drag: none;
         user-drag: none;
+    }
+
+    /* Tab 图标显示稳定性（PWA 模式修复） */
+    .tab-icon svg {
+        display: block;
+        width: 1.5rem;
+        height: 1.5rem;
+        min-width: 1.5rem;
+        min-height: 1.5rem;
+        stroke: currentColor;
+        fill: none;
+        visibility: visible;
     }
 </style>
