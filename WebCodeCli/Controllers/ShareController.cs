@@ -22,6 +22,35 @@ public class ShareController : ControllerBase
         _logger = logger;
     }
 
+    private string GetRequestBaseUrl()
+    {
+        var scheme = Request.Scheme;
+        var host = Request.Host.Value;
+
+        if (Request.Headers.TryGetValue("X-Forwarded-Proto", out var forwardedProto))
+        {
+            var protoParts = forwardedProto.ToString().Split(',');
+            var protoValue = protoParts.Length > 0 ? protoParts[0] : null;
+            if (!string.IsNullOrWhiteSpace(protoValue))
+            {
+                scheme = protoValue.Trim();
+            }
+        }
+
+        if (Request.Headers.TryGetValue("X-Forwarded-Host", out var forwardedHost))
+        {
+            var hostParts = forwardedHost.ToString().Split(',');
+            var hostValue = hostParts.Length > 0 ? hostParts[0] : null;
+            if (!string.IsNullOrWhiteSpace(hostValue))
+            {
+                host = hostValue.Trim();
+            }
+        }
+
+        var pathBase = Request.PathBase.HasValue ? Request.PathBase.Value : string.Empty;
+        return $"{scheme}://{host}{pathBase}";
+    }
+
     /// <summary>
     /// 创建分享
     /// POST /api/share
@@ -50,7 +79,7 @@ public class ShareController : ControllerBase
             var result = await _shareService.CreateShareAsync(request);
 
             // 生成完整的分享链接
-            var baseUrl = $"{Request.Scheme}://{Request.Host}";
+            var baseUrl = GetRequestBaseUrl();
             result.ShareUrl = _shareService.GenerateShareUrl(result.ShareCode, baseUrl);
 
             _logger.LogInformation("分享创建成功: ShareCode={ShareCode}, SessionId={SessionId}", 
@@ -352,7 +381,7 @@ public class ShareController : ControllerBase
             var shares = await _shareService.GetSessionSharesAsync(sessionId);
 
             // 生成完整的分享链接
-            var baseUrl = $"{Request.Scheme}://{Request.Host}";
+            var baseUrl = GetRequestBaseUrl();
             foreach (var share in shares)
             {
                 share.ShareUrl = _shareService.GenerateShareUrl(share.ShareCode, baseUrl);
