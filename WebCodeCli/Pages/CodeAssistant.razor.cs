@@ -3454,6 +3454,13 @@ public partial class CodeAssistant : ComponentBase, IAsyncDisposable
     private static bool IsCompletionEvent(JsonlDisplayItem evt)
     {
         // 判断是否为完成类型的事件（这些事件默认折叠起来）
+        // 但助手消息（agent_message）的 item.completed 不折叠，直接显示内容
+        if (evt.Type == "item.completed" && 
+            string.Equals(evt.ItemType, "agent_message", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+        
         return evt.Type == "turn.completed" || 
                evt.Type == "thread.completed" || 
                evt.Type == "item.completed" || 
